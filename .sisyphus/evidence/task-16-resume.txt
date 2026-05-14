@@ -1,0 +1,4 @@
+=== RUN   TestRunOnceResumesAfterFailure
+--- PASS: TestRunOnceResumesAfterFailure (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/lore/ingest	(cached)

@@ -1,0 +1,8 @@
+iris-bot  | {"time":"2026-05-14T04:40:26.612690014Z","level":"INFO","msg":"iris-bot starting"}
+iris-bot  | {"time":"2026-05-14T04:40:26.620459472Z","level":"INFO","msg":"model resolver ready","default":"kr/claude-sonnet-4.5","strong":"kr/claude-opus-4.7","router":"kr/claude-haiku-4.5"}
+iris-bot  | {"time":"2026-05-14T04:40:26.620492793Z","level":"INFO","msg":"llm_clients_ready","chat_timeout":"2m0s","tool_timeout":"10m0s"}
+iris-bot  | {"time":"2026-05-14T04:40:26.920643714Z","level":"INFO","msg":"memory startup","enabled":true,"threshold":0.72,"top_k":5,"workers":1,"backfill_limit":500}
+iris-bot  | {"time":"2026-05-14T04:40:26.923871971Z","level":"INFO","msg":"context classifier backend=similarity","threshold":0.7}
+iris-bot  | {"time":"2026-05-14T04:40:26.924125626Z","level":"INFO","msg":"escalate tool registered"}
+iris-bot  | {"time":"2026-05-14T04:40:26.924146018Z","level":"INFO","msg":"websearch tool registered","provider":"searxng","base_url":"http://searxng:8080"}
+iris-bot  | time=2026-05-14T04:40:34.591Z level=DEBUG msg=mcp_server_stderr server=twitter line="TweetSave MCP server running via stdio"

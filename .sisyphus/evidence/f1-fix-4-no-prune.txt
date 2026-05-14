@@ -1,0 +1,28 @@
+V4 COMPLIANCE VERIFICATION: No 20-Message Prune in Upsert
+==========================================================
+
+FILE: internal/repository/channel_context.go
+- Upsert method (lines 108-149): NO prune logic ✓
+  * Only performs INSERT ... ON CONFLICT DO UPDATE ✓
+  * No DELETE statement ✓
+  * No OFFSET clause ✓
+  * msg.ContentEmbedding stays nil if not provided ✓
+
+SEPARATE METHOD:
+- PruneOldest method (lines 151-167): Exists but NOT called from Upsert ✓
+  * Only called explicitly by tests ✓
+  * Not invoked during normal capture flow ✓
+
+TESTS PASSING:
+- TestChannelMessageRepo_UpsertDoesNotPrune ✓
+- TestChannelMessageRepo/Upsert_does_not_prune_messages_(stores_all_indefinitely) ✓
+  * Inserts 25 messages in same guild/channel ✓
+  * Verifies all 25 remain (no pruning) ✓
+  * Verifies newest message ID is 2025 ✓
+
+ARCHITECTURE:
+- Messages are stored indefinitely per plan requirement
+- No automatic pruning on capture
+- PruneOldest available for explicit admin/retention policies (future)
+
+STATUS: COMPLIANT - No changes needed. Code already correct.

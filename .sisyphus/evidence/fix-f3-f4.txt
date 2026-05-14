@@ -1,0 +1,78 @@
+# Fix F3-F4 Verification Evidence
+
+## Summary
+Fixed two Final Verification Wave rejections:
+- F4 REJECT (scope drop): Wired lore worker in cmd/iris-bot/main.go
+- F3 REJECT (data race): Fixed race condition in fakeSendRecorder with sync.Mutex
+
+## Fix F4: Lore Worker Wiring
+
+### Changes Made
+1. Created LoreThreadLLMCallerAdapter in internal/app/wire/adapters.go
+   - Implements lorethread.LLMCaller interface
+   - Wraps llm.Client for LLM calls with system/user prompts
+
+2. Wired lore worker in cmd/iris-bot/main.go (lines 441-505)
+   - Constructs LLMSummarizer with redactor and timeout
+   - Constructs LLMTitleGenerator with clock and timeout
+   - Constructs MessageFetcher, ThreadCreator, Limiter, AnchorStore
+   - Assembles Worker with all dependencies
+   - Calls loreWorker.Start(ctx) with graceful shutdown via defer loreWorker.Stop()
+   - Logs "lore_worker_started" or "lore_worker_disabled" based on cfg.LoreThreadsEnabled
+
+### Verification
+✓ go build ./... - PASSED
+✓ go test ./... -count=1 - PASSED (all packages)
+✓ Lore worker now starts at runtime when LoreThreadsEnabled=true
+✓ Sessions accumulate in DB and are processed into threads by the worker
+
+## Fix F3: Race Condition in fakeSendRecorder
+
+### Changes Made
+1. Added sync.Mutex to fakeSendRecorder struct in orchestrator_e2e_test.go
+   - Protected chunks slice with mutex on both read and write
+   - Protected typingSends counter with mutex
+
+2. Added accessor methods:
+   - Chunks() - returns copy of chunks slice under lock
+   - ChunkCount() - returns length of chunks under lock
+
+3. Updated test code to use accessor methods:
+   - orchestrator_e2e_test.go: Updated TestE2EDebugAuditAndContext
+   - orchestrator_sim_e2e_test.go: Updated TestE2ESimilarityInWindowRelevance
+   - All direct field accesses replaced with method calls
+
+### Verification
+✓ go test -race ./internal/orchestrator -count=1 -run E2E - PASSED
+✓ No DATA RACE output detected
+✓ Both E2E tests pass with race detector enabled
+
+## Build and Test Results
+
+### go build ./...
+Status: PASSED
+All packages compiled successfully
+
+### go test ./... -count=1
+Status: PASSED
+All test packages passed:
+- github.com/eko/iris-bot/cmd/iris-bot: ok (0.923s)
+- github.com/eko/iris-bot/internal/orchestrator: ok (24.106s)
+- All other packages: ok
+
+### go test -race ./internal/orchestrator -count=1 -run E2E
+Status: PASSED
+- TestE2EDebugAuditAndContext: PASSED
+- TestE2ESimilarityInWindowRelevance: PASSED
+- No race conditions detected
+
+## Files Modified
+1. internal/app/wire/adapters.go - Added LoreThreadLLMCallerAdapter
+2. cmd/iris-bot/main.go - Wired lore worker
+3. internal/orchestrator/orchestrator_e2e_test.go - Fixed race condition
+4. internal/orchestrator/orchestrator_sim_e2e_test.go - Updated to use accessor methods
+
+## Conclusion
+Both F3 and F4 rejections have been successfully resolved:
+- F4: Lore worker is now constructed and started in main.go, enabling the full protocol
+- F3: Race condition in fakeSendRecorder is fixed with proper synchronization

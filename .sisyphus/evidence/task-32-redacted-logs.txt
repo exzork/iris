@@ -1,0 +1,43 @@
+## Task 32: Secret Redaction Evidence
+
+### Test: TestLogRedactsSecrets
+
+**Objective**: Verify that API keys and secrets are redacted in log output.
+
+**Test Code**:
+```go
+func TestLogRedactsSecrets(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewLogger(buf, slog.LevelInfo)
+	ctx := context.Background()
+	logger.Info(ctx, "test", "token", "sk-test-1234567890abcdef1234567890abcdef")
+
+	output := buf.String()
+	if bytes.Contains([]byte(output), []byte("sk-")) {
+		t.Errorf("secret key not redacted in output: %s", output)
+	}
+	if !bytes.Contains([]byte(output), []byte("[REDACTED_TOKEN]")) {
+		t.Errorf("expected [REDACTED_TOKEN] in output: %s", output)
+	}
+}
+```
+
+**Result**: PASS
+
+**Evidence**:
+- Input: `"token": "sk-test-1234567890abcdef1234567890abcdef"`
+- Output: `"token": "[REDACTED_TOKEN]"`
+- The raw secret key `sk-` prefix is NOT present in logs
+- The redaction mask `[REDACTED_TOKEN]` is present
+- Redactor applies OpenAI-style key pattern: `sk-[A-Za-z0-9_\-]{20,}`
+
+**Redaction Rules Applied**:
+- OpenAI keys: `sk-*` patterns
+- Discord tokens: three base64 chunks separated by dots
+- Bearer tokens: `bearer <token>`
+- AWS keys: `AKIA*`
+- Hex secrets: 32+ hex character strings
+- Email addresses
+- Password key-value pairs
+
+**Conclusion**: Secret redaction is working correctly. No raw secrets appear in structured logs.

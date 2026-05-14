@@ -1,0 +1,5 @@
+=== RUN   TestComposeSupportedAnswer
+    composer_test.go:62: PromptContext: &{HasSupport:true Citations:[{Title:Rover URL:https://wutheringwaves.fandom.com/wiki/Rover}] Snippets:[Rover is a character in Wuthering Waves.]}
+--- PASS: TestComposeSupportedAnswer (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/lore/rag	0.010s

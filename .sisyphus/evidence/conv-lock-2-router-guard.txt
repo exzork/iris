@@ -1,0 +1,8 @@
+=== RUN   TestDecide_ActiveConversation_RespectsIncludeListGuard
+--- PASS: TestDecide_ActiveConversation_RespectsIncludeListGuard (0.00s)
+=== RUN   TestDecide_ActiveConversation_BotStillIgnored
+--- PASS: TestDecide_ActiveConversation_BotStillIgnored (0.00s)
+=== RUN   TestDecide_ActiveConversation_MentionStillWins
+--- PASS: TestDecide_ActiveConversation_MentionStillWins (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/router	0.005s

@@ -1,0 +1,34 @@
+=== RUN   TestLongResponseIsSplit
+--- PASS: TestLongResponseIsSplit (0.01s)
+=== RUN   TestSplitMessageShort
+--- PASS: TestSplitMessageShort (0.00s)
+=== RUN   TestSplitMessageEmpty
+--- PASS: TestSplitMessageEmpty (0.00s)
+=== RUN   TestSplitMessageExactLimit
+--- PASS: TestSplitMessageExactLimit (0.00s)
+=== RUN   TestSplitMessageOverLimit
+--- PASS: TestSplitMessageOverLimit (0.00s)
+=== RUN   TestSplitMessagePrefersNewline
+--- PASS: TestSplitMessagePrefersNewline (0.00s)
+=== RUN   TestSplitMessagePrefersSpace
+--- PASS: TestSplitMessagePrefersSpace (0.00s)
+=== RUN   TestSplitMessageVeryLongNoSeparator
+--- PASS: TestSplitMessageVeryLongNoSeparator (0.00s)
+=== RUN   TestSplitMessageExact2000CharBoundary
+--- PASS: TestSplitMessageExact2000CharBoundary (0.00s)
+=== RUN   TestSplitMessage4500CharsWithNewlines
+--- PASS: TestSplitMessage4500CharsWithNewlines (0.00s)
+=== RUN   TestSplitMessageSingleLongWordHardSplit
+--- PASS: TestSplitMessageSingleLongWordHardSplit (0.00s)
+=== RUN   TestSplitMessageChunkOrdering
+--- PASS: TestSplitMessageChunkOrdering (0.00s)
+=== RUN   TestSplitMessageNoChunkExceedsLimit
+=== RUN   TestSplitMessageNoChunkExceedsLimit/4500_chars
+=== RUN   TestSplitMessageNoChunkExceedsLimit/10000_chars
+=== RUN   TestSplitMessageNoChunkExceedsLimit/mixed_content
+--- PASS: TestSplitMessageNoChunkExceedsLimit (0.00s)
+    --- PASS: TestSplitMessageNoChunkExceedsLimit/4500_chars (0.00s)
+    --- PASS: TestSplitMessageNoChunkExceedsLimit/10000_chars (0.00s)
+    --- PASS: TestSplitMessageNoChunkExceedsLimit/mixed_content (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.015s

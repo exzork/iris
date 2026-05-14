@@ -1,0 +1,19 @@
+OK: README.md :: ## Overview
+OK: README.md :: ## Quickstart
+OK: README.md :: ## Discord Message Content Intent
+OK: README.md :: ## Environment Variables
+OK: README.md :: ## Docker Compose
+OK: README.md :: ## Running Migrations
+OK: README.md :: ## Admin Commands
+OK: README.md :: ## Development
+OK: docs/runbook.md :: ## Prerequisites
+OK: docs/runbook.md :: ## Initial Deployment
+OK: docs/runbook.md :: ## Troubleshooting
+OK: docs/runbook.md :: ## Rotating Secrets
+OK: docs/admin-commands.md :: !iris help
+OK: docs/admin-commands.md :: !iris exception add
+OK: docs/architecture.md :: ## Event Flow
+OK: docs/architecture.md :: ## Data Layer
+OK: docs/architecture.md :: ## Lore Retrieval
+OK: docs/architecture.md :: ## Safety
+Doc check PASSED

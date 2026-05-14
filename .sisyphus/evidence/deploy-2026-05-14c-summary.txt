@@ -1,0 +1,42 @@
+DEPLOY SUMMARY: 2026-05-14T04:41:07Z
+=====================================
+
+TIMESTAMP: 2026-05-14T04:41:07Z
+
+BUILD:
+  Image Hash: sha256:7a79820165b3cfe0d80df2ff28eaf03c5333a0eb4910c557724ac336a50c1d4c
+  Status: SUCCESS
+
+CONTAINER:
+  Container ID: iris-bot (Recreated)
+  Status: Up 4+ seconds
+  Health: Running
+
+STARTUP VERIFICATION:
+  ✓ mcp supervisor ready: YES (path=/app/config/mcps.json, owner_id=291231194723647499)
+  ✓ llm_clients_ready: YES (chat_timeout=2m0s, tool_timeout=10m0s)
+  ✓ lore_worker_started: YES (poll_interval=30s, llm_timeout=0s)
+  ✓ No panic/FATAL errors: CONFIRMED
+
+ENVIRONMENT CHECK:
+  LLM_TIMEOUT: 2m
+  IRIS_LORE_LLM_TIMEOUT: 0
+  IRIS_LORE_LLM_MODEL: kr/claude-opus-4.7
+  IRIS_LORE_WORKER_POLL_INTERVAL: 30s
+  IRIS_LORE_THREADS_ENABLED: true
+  Status: PASS
+
+ALLOWLIST CHECK (allowed_channels):
+  Guild: 761163966030151701
+  Channel: 1504020311496986715
+  Created: 2026-05-14 11:18:28.164699
+  Row Present: YES
+  Status: PASS
+
+GUILD LORE SETTINGS:
+  Guild: 761163966030151701
+  Enabled: true
+  Row Present: YES
+  Status: PASS
+
+OVERALL: ✓ DEPLOYMENT SUCCESSFUL

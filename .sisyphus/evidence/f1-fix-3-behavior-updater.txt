@@ -1,0 +1,55 @@
+# F1 Fix 3: BehaviorProfileService.UpdateFromSamples - Async Wiring
+
+## Verification
+- File: internal/orchestrator/orchestrator.go lines 56-78, 310-320
+- Status: VERIFIED - BehaviorUpdater interface wired and called as goroutine
+
+## Interface Definition (line 56-58)
+```go
+type BehaviorUpdater interface {
+	UpdateFromMessage(ctx context.Context, guildID, userID int64, content string, createdAt time.Time) error
+}
+```
+
+## Config Field (line 78)
+```go
+BehaviorUpdater        BehaviorUpdater // optional; if nil, skip behavior learning
+```
+
+## Goroutine Call in handle() (lines 312-320)
+```go
+if o.cfg.BehaviorUpdater != nil && event.Message != nil && event.GuildID > 0 && event.UserID > 0 && !event.IsBot {
+	go func() {
+		updateCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := o.cfg.BehaviorUpdater.UpdateFromMessage(updateCtx, event.GuildID, event.UserID, event.Message.Content, event.Message.CreatedAt); err != nil {
+			slog.DebugContext(updateCtx, "behavior_update_failed", "guild", event.GuildID, "user", event.UserID, "error", err)
+		}
+	}()
+}
+```
+
+## Adapter Implementation (internal/app/wire/adapters.go)
+- BehaviorProfileUpdater: direct wrapper around service
+- BehaviorProfileUpdateAdapter: buffers samples by (guildID, userID), flushes at 5 samples or 10 minutes
+- Both implement orchestrator.BehaviorUpdater interface
+
+## Test Results
+```
+=== RUN   TestBehaviorProfileUpdater_CallsServiceWithSamples
+--- PASS: TestBehaviorProfileUpdater_CallsServiceWithSamples (0.00s)
+=== RUN   TestBehaviorProfileUpdater_SkipsWhenNilService
+--- PASS: TestBehaviorProfileUpdater_SkipsWhenNilService (0.00s)
+=== RUN   TestBehaviorProfileUpdateAdapter_BuffersAndFlushes
+--- PASS: TestBehaviorProfileUpdateAdapter_BuffersAndFlushes (0.10s)
+PASS
+ok  	github.com/eko/iris-bot/internal/app/wire	0.106s
+```
+
+## Compliance
+✓ BehaviorUpdater interface defined with UpdateFromMessage signature
+✓ Called as goroutine in handle() after capture
+✓ Only called when GuildID != 0 and not bot
+✓ BehaviorProfileUpdateAdapter buffers samples by (guildID, userID)
+✓ Flushes at 5 samples or 10 minutes
+✓ Tests verify buffering and flushing behavior

@@ -1,0 +1,45 @@
+# F1 Fix 2: ChannelCaptureAdapter.Capture - No Synchronous Embedding
+
+## Verification
+- File: internal/app/wire/adapters.go lines 223-236
+- Status: VERIFIED - no synchronous Embed call
+- Line 225: Capture calls repo.Upsert(ctx, msg) only
+- ContentEmbedding left nil for async worker backfill
+- Embedder field removed from struct (only Repo and GuildEnsurer present)
+
+## Code Review
+```go
+func (a *ChannelCaptureAdapter) Capture(ctx context.Context, msg *domain.ChannelMessage) error {
+	if a.Repo == nil {
+		return nil
+	}
+
+	// Ensure guild row exists before any per-guild write
+	if a.GuildEnsurer != nil && msg.GuildID > 0 {
+		if err := a.GuildEnsurer.Ensure(ctx, msg.GuildID); err != nil {
+			slog.WarnContext(ctx, "failed to ensure guild row", "guild_id", msg.GuildID, "error", err)
+		}
+	}
+
+	// Capture message with NULL embedding; async worker will backfill embeddings
+	return a.Repo.Upsert(ctx, msg)
+}
+```
+
+## Test Results
+```
+=== RUN   TestChannelCaptureAdapter_DoesNotEmbedSynchronously
+--- PASS: TestChannelCaptureAdapter_DoesNotEmbedSynchronously (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/app/wire	0.007s
+```
+
+## LSP Diagnostics
+No diagnostics found (hints about interface{} are pre-existing)
+
+## Compliance
+✓ No synchronous Embed call in Capture
+✓ ContentEmbedding left nil
+✓ Embedder field removed from struct
+✓ main.go does not pass Embedder kwarg
+✓ Test verifies embedder not called during capture

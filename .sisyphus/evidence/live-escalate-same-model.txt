@@ -1,0 +1,32 @@
+=== SAME-MODEL ESCALATION SKIP FIX EVIDENCE ===
+
+TEST OUTPUT:
+=== RUN   TestHandle_EscalateSkippedWhenSameModel
+2026/05/12 06:18:13 INFO router_decision reason=mention should=true
+2026/05/12 06:18:13 INFO typing_started guild=1 channel=1 reason=pipeline_start
+2026/05/12 06:18:13 INFO llm_request model=unknown
+2026/05/12 06:18:13 INFO llm_escalate_skipped reason=complex_reasoning_needed model=unknown strong_model=unknown
+2026/05/12 06:18:13 INFO typing_stopped guild=1 channel=1
+--- PASS: TestHandle_EscalateSkippedWhenSameModel (0.01s)
+
+ESCALATION GUARD ADDED:
+File: internal/orchestrator/orchestrator.go (lines 425-465)
+
+Key change at line 428:
+  if reason := ex.Reason(); reason != "" && o.cfg.StrongModel != "" && modelToUse != o.cfg.StrongModel {
+      // escalate to strong model
+  } else if reason := ex.Reason(); reason != "" {
+      slog.InfoContext(ctx, "llm_escalate_skipped", "reason", reason, "model", modelToUse, "strong_model", o.cfg.StrongModel)
+      ex.Clear()
+  }
+
+BEHAVIOR:
+- Before: Escalation triggered whenever reason != "" && StrongModel != "", wasting LLM calls
+- After: Only escalate when modelToUse != StrongModel (prevents same-model re-runs)
+- Log: llm_escalate_skipped emitted when escalation is suppressed
+- Example: model=unknown, strong_model=unknown → skip escalation, log reason
+
+IMPACT:
+- Eliminates wasteful re-runs with same model
+- Operators can see why escalation was skipped via logs
+- Reduces LLM API costs

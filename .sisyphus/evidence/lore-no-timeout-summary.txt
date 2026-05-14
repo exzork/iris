@@ -1,0 +1,94 @@
+# Lore LLM No-Timeout Implementation Summary
+
+## Changes Implemented
+
+### 1. Configuration (internal/config/config.go)
+- Added `LoreLLMModel string` field to Config struct
+- Parses `IRIS_LORE_LLM_MODEL` env var
+- Falls back to `cfg.LLMModelStrong` when unset
+- Validates model name using existing ValidateModelName()
+
+### 2. Config Tests (internal/config/config_test.go)
+- TestLoadConfig_LoreLLMModelUnset: Verifies fallback to LLMModelStrong
+- TestLoadConfig_LoreLLMModelSet: Verifies env var is used verbatim
+
+### 3. Zero-Timeout Handling
+All lore LLM services now support timeout=0 as "no deadline":
+
+#### classifier.go (LLMClassifier.Classify)
+- If timeout > 0: uses context.WithTimeout(ctx, timeout)
+- If timeout == 0: uses ctx directly (no deadline)
+
+#### summarizer.go (LLMSummarizer.Summarize)
+- If timeout > 0: uses context.WithTimeout(ctx, timeout)
+- If timeout == 0: uses ctx directly (no deadline)
+
+#### title.go (LLMTitleGenerator.Generate)
+- If timeout > 0: uses context.WithTimeout(ctx, timeout)
+- If timeout == 0: uses ctx directly (no deadline)
+
+#### worker.go (Worker)
+- initDefaults(): Changed LLMTimeout check from `<= 0` to `< 0`
+  - Allows 0 to pass through as "no deadline"
+  - Only substitutes default for negative values
+- generateTitleAndSummary(): Conditionally wraps with WithTimeout only if LLMTimeout > 0
+
+### 4. Model Configuration (cmd/iris-bot/main.go)
+All lore services now use cfg.LoreLLMModel:
+- LoreClassifierAdapter: Model = cfg.LoreLLMModel
+- LoreThreadLLMCallerAdapter (summarizer): Model = cfg.LoreLLMModel
+- LoreThreadLLMCallerAdapter (title generator): Model = cfg.LoreLLMModel
+- LLMCompactor (lore compaction): Model = cfg.LoreLLMModel
+
+### 5. Docker & Environment
+- docker-compose.yml: Added IRIS_LORE_LLM_MODEL env var
+- .env.example: Documented IRIS_LORE_LLM_MODEL with fallback explanation
+- .env: Set IRIS_LORE_LLM_TIMEOUT=0 and IRIS_LORE_LLM_MODEL=kr/claude-opus-4.7
+
+## Verification Results
+
+### Tests
+✓ go test ./internal/config -count=1: PASS
+  - TestLoadConfig_LoreLLMModelUnset: PASS
+  - TestLoadConfig_LoreLLMModelSet: PASS
+✓ go test ./internal/lorethread -count=1: PASS (all 30+ tests)
+✓ go test ./... -count=1: PASS (all packages)
+✓ go build ./...: SUCCESS
+
+### Docker Compose
+✓ Container recreated successfully
+✓ Environment variables verified:
+  - IRIS_LORE_LLM_TIMEOUT=0
+  - IRIS_LORE_LLM_MODEL=kr/claude-opus-4.7
+✓ Bot startup logs show:
+  - lore_worker_started with llm_timeout="0s"
+  - Model resolver ready with strong=kr/claude-opus-4.7
+
+## Behavior Changes
+
+1. **Timeout Semantics**: 
+   - 0 = no deadline (only parent ctx cancellation)
+   - > 0 = deadline with specified duration
+   - < 0 = invalid (substituted with default in worker)
+
+2. **Model Selection**:
+   - All lore LLM calls now use IRIS_LORE_LLM_MODEL
+   - Defaults to LLM_MODEL_STRONG when unset
+   - Single source of truth for lore model configuration
+
+3. **Graceful Shutdown**:
+   - Bot still respects SIGTERM via root context cancellation
+   - Lore LLM calls will be interrupted on root ctx cancel
+   - No premature timeouts when IRIS_LORE_LLM_TIMEOUT=0
+
+## Files Modified
+- internal/config/config.go
+- internal/config/config_test.go
+- internal/lorethread/classifier.go
+- internal/lorethread/summarizer.go
+- internal/lorethread/title.go
+- internal/lorethread/worker.go
+- cmd/iris-bot/main.go
+- docker-compose.yml
+- .env.example
+- .env (backed up to .env.bak.2026-05-13b)

@@ -1,0 +1,54 @@
+## CONV-LOCK T5: E2E Test Implementation Evidence
+
+### Test Name
+TestE2E_ConversationSlidingWindow
+Location: internal/orchestrator/orchestrator_test.go
+
+### Test Scenario
+Tests the conversation sliding window behavior with three sequential message enqueues:
+
+1. **First Enqueue (Mention Event)**
+   - Event: mention event with content "hello"
+   - Router Decision: ReasonMention
+   - Expected: LLM called, reply sent, refresher.Refresh called once
+   - Assertion: len(disc.GetSentMessages()) > 0, firstRefreshCount == 1
+
+2. **Second Enqueue (Active Conversation)**
+   - Event: same channel, no mention, content "so what about it?"
+   - Router Decision: ReasonActiveConversation
+   - Relevance Gate: returns true
+   - Expected: LLM called, reply sent, refresher.Refresh called second time
+   - Assertion: len(disc.GetSentMessages()) > 1, secondRefreshCount == 2
+
+3. **Third Enqueue (Irrelevant Message)**
+   - Event: same channel, no mention, content "random unrelated topic"
+   - Router Decision: ReasonActiveConversation
+   - Relevance Gate: returns false
+   - Expected: no LLM call, no reply, no refresher call
+   - Assertion: len(disc.GetSentMessages()) == 2, thirdRefreshCount == 2
+
+### Test Infrastructure
+- Fake LLM: testutil.NewFakeLLMClient() with 50ms latency
+- Fake Discord: testutil.NewFakeDiscordClient()
+- Fake Context Store: seeded with 3 messages (Alice, Bob, Bot)
+- Fake Refresher: tracks call count via atomic.Int64
+- Fake Relevance Gate: configurable boolean return
+- Fake Allowed Querier: HasAny=true, IsAllowed=true
+
+### Test Helpers
+- waitUntil(t, timeout, cond): polls condition with 5ms intervals
+- fakeRefresher: implements ChannelConversationQuerier
+- fakeRelevanceGate: implements InWindowRelevance
+- fakeAllowedQuerier: implements AllowedChannelQuerier
+
+### Test Result
+=== RUN   TestE2E_ConversationSlidingWindow
+--- PASS: TestE2E_ConversationSlidingWindow (0.30s)
+
+### Assertions Verified
+✓ First mention triggers LLM and refresh
+✓ Active conversation with relevance=true triggers LLM and refresh
+✓ Active conversation with relevance=false skips LLM and refresh
+✓ Refresh call count increments correctly
+✓ Message send count reflects LLM invocations
+✓ No timing-sensitive assertions (uses waitUntil helper)

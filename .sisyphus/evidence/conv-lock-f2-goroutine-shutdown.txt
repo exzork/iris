@@ -1,0 +1,13 @@
+=== RUN   TestRefreshGoroutineWaitsForShutdown
+--- PASS: TestRefreshGoroutineWaitsForShutdown (0.00s)
+=== RUN   TestImmediateTypingRefreshesEveryRepeatInterval
+--- PASS: TestImmediateTypingRefreshesEveryRepeatInterval (0.31s)
+=== RUN   TestSendErrorDoesNotRefresh
+2026/05/12 00:33:05 WARN failed to send message chunk guild_id=1 channel_id=1 chunk_index=0 error="send failed"
+--- PASS: TestSendErrorDoesNotRefresh (0.51s)
+=== RUN   TestMentionRefreshesLock
+--- PASS: TestMentionRefreshesLock (0.01s)
+=== RUN   TestNilRefresher_NoOp
+--- PASS: TestNilRefresher_NoOp (0.01s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.829s

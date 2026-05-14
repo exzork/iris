@@ -1,0 +1,31 @@
+=== RUN   TestChannelMessage_UpsertWithEmbedding_PersistsAndReads
+--- PASS: TestChannelMessage_UpsertWithEmbedding_PersistsAndReads (0.08s)
+=== RUN   TestChannelMessage_UpsertWithoutEmbedding_StillWorks
+--- PASS: TestChannelMessage_UpsertWithoutEmbedding_StillWorks (0.09s)
+=== RUN   TestChannelMessage_UpsertUpdatesEmbedding
+--- PASS: TestChannelMessage_UpsertUpdatesEmbedding (0.09s)
+=== RUN   TestChannelMessageRepo
+=== RUN   TestChannelMessageRepo/Upsert_and_GetByID
+=== RUN   TestChannelMessageRepo/Upsert_prunes_to_newest_20_per_guild/channel
+=== RUN   TestChannelMessageRepo/ListRecent_returns_messages_in_chronological_order
+=== RUN   TestChannelMessageRepo/Reply_metadata_round-trips
+=== RUN   TestChannelMessageRepo/MarkDeleted
+=== RUN   TestChannelMessageRepo/UpdateContent
+=== RUN   TestChannelMessageRepo/ListByUserAcrossChannels
+=== RUN   TestChannelMessageRepo/PruneOldest
+--- PASS: TestChannelMessageRepo (0.14s)
+    --- PASS: TestChannelMessageRepo/Upsert_and_GetByID (0.00s)
+    --- PASS: TestChannelMessageRepo/Upsert_prunes_to_newest_20_per_guild/channel (0.02s)
+    --- PASS: TestChannelMessageRepo/ListRecent_returns_messages_in_chronological_order (0.00s)
+    --- PASS: TestChannelMessageRepo/Reply_metadata_round-trips (0.00s)
+    --- PASS: TestChannelMessageRepo/MarkDeleted (0.00s)
+    --- PASS: TestChannelMessageRepo/UpdateContent (0.00s)
+    --- PASS: TestChannelMessageRepo/ListByUserAcrossChannels (0.01s)
+    --- PASS: TestChannelMessageRepo/PruneOldest (0.01s)
+PASS
+ok  	github.com/eko/iris-bot/internal/repository	0.405s
+
+All embedding round-trip tests pass:
+- UpsertWithEmbedding_PersistsAndReads: 384-dim vector persists and reads back correctly
+- UpsertWithoutEmbedding_StillWorks: NULL embedding handled gracefully
+- UpsertUpdatesEmbedding: ON CONFLICT DO UPDATE correctly updates embedding

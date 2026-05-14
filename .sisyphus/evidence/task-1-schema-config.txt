@@ -1,0 +1,20 @@
+=== RUN   TestLoadConfig_MemoryServerDefaults
+--- PASS: TestLoadConfig_MemoryServerDefaults (0.00s)
+=== RUN   TestLoadConfig_MemoryServerOverrides
+--- PASS: TestLoadConfig_MemoryServerOverrides (0.00s)
+=== RUN   TestLoadConfig_MemoryServerInvalidValuesFallBack
+--- PASS: TestLoadConfig_MemoryServerInvalidValuesFallBack (0.00s)
+=== RUN   TestMemoryServerConfig_DefaultsWhenUnset
+--- PASS: TestMemoryServerConfig_DefaultsWhenUnset (0.00s)
+=== RUN   TestMemoryServerConfig_EnvOverrides
+--- PASS: TestMemoryServerConfig_EnvOverrides (0.00s)
+=== RUN   TestMemoryServerConfig_ThresholdOutOfRangeFallsBack
+--- PASS: TestMemoryServerConfig_ThresholdOutOfRangeFallsBack (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/config	0.022s
+
+---
+2026-05-12 verification rerun
+
+$ go test ./internal/config -count=1
+ok  	github.com/eko/iris-bot/internal/config	0.002s

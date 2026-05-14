@@ -1,0 +1,13 @@
+=== RUN   TestGuildOverrideBeatsDefault
+--- PASS: TestGuildOverrideBeatsDefault (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/settings	0.002s
+
+Test Scenario: Guild Override Beats Default
+Preconditions: global image_cooldown_sec default is 60s, guild 1 overrides to 120s
+Steps:
+  1. Set guild 1 image_cooldown_sec to "120"
+  2. Query effective config for guild 1
+  3. Verify GetInt returns 120
+Expected Result: cooldown is 120s (guild override beats global default)
+Actual Result: PASS - Guild override correctly beats default value

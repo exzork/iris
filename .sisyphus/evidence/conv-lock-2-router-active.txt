@@ -1,0 +1,8 @@
+=== RUN   TestDecide_ActiveConversation_ElevatesCasualMessage
+--- PASS: TestDecide_ActiveConversation_ElevatesCasualMessage (0.00s)
+=== RUN   TestDecide_ActiveConversation_InactiveFallsThroughToNoTrigger
+--- PASS: TestDecide_ActiveConversation_InactiveFallsThroughToNoTrigger (0.00s)
+=== RUN   TestDecide_ActiveConversation_NilQuerierIdenticalToCurrentRouter
+--- PASS: TestDecide_ActiveConversation_NilQuerierIdenticalToCurrentRouter (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/router	0.003s

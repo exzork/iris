@@ -1,0 +1,5 @@
+=== RUN   TestComposeUnsupportedCaveat
+    composer_test.go:99: UnsupportedResponse: &{Message:Belum ada data yang terindeks untuk pertanyaan ini. Silakan periksa wiki Wuthering Waves secara langsung: https://wutheringwaves.fandom.com/wiki/Special:Search}
+--- PASS: TestComposeUnsupportedCaveat (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/lore/rag	0.003s

@@ -1,0 +1,11 @@
+                 List of relations
+ Schema |         Name         | Type  |   Owner   
+--------+----------------------+-------+-----------
+ public | lore_chunks          | table | iris_user
+ public | lore_documents       | table | iris_user
+ public | lore_guild_settings  | table | iris_user
+ public | lore_sessions        | table | iris_user
+ public | lore_thread_anchors  | table | iris_user
+ public | lore_thread_counters | table | iris_user
+(6 rows)
+

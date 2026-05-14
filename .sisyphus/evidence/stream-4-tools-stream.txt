@@ -1,0 +1,103 @@
+T4: ChatWithToolsStream Implementation - Evidence Report
+========================================================
+
+Date: 2026-05-12
+Task: Implement Client.ChatWithToolsStream with delta buffering for fragmented tool-call arguments
+
+## Test Results
+
+All 6 test cases PASS:
+
+=== RUN   TestChatWithToolsStream_NoToolCalls_StreamsText
+--- PASS: TestChatWithToolsStream_NoToolCalls_StreamsText (0.00s)
+
+=== RUN   TestChatWithToolsStream_OneToolCall_ThenStreamsText
+--- PASS: TestChatWithToolsStream_OneToolCall_ThenStreamsText (0.00s)
+
+=== RUN   TestChatWithToolsStream_MaxRounds_StopsGracefully
+--- PASS: TestChatWithToolsStream_MaxRounds_StopsGracefully (0.00s)
+
+=== RUN   TestChatWithToolsStream_FragmentedArguments_AssembledBeforeExec
+--- PASS: TestChatWithToolsStream_FragmentedArguments_AssembledBeforeExec (0.00s)
+
+=== RUN   TestChatWithToolsStream_ParallelToolCalls
+--- PASS: TestChatWithToolsStream_ParallelToolCalls (0.00s)
+
+=== RUN   TestChatWithToolsStream_InvalidArgsJSON_ReportsError
+--- PASS: TestChatWithToolsStream_InvalidArgsJSON_ReportsError (0.00s)
+
+PASS
+ok  	github.com/eko/iris-bot/internal/llm	0.008s
+
+## Build & Verification
+
+✓ go build ./... - SUCCESS
+✓ go vet ./... - SUCCESS (no errors, only pre-existing interface{} hints)
+✓ go test -p 2 -count=1 ./... - SUCCESS (all 34 packages pass)
+✓ lsp_diagnostics - CLEAN (no errors on modified files)
+
+## Files Changed
+
+1. internal/llm/client.go
+   - Added ChatWithToolsStreamConfig struct with OnDelta callback
+   - Added sseDelta struct for SSE parsing
+   - Added pendingToolCall struct for tool-call accumulation
+   - Implemented ChatWithToolsStream() method with:
+     * Multi-round tool-call loop
+     * Delta buffering via OnDelta callback
+     * Tool-call accumulation by index
+     * Fragmented argument assembly
+     * Invalid JSON error handling
+     * Max rounds enforcement
+   - Implemented doStreamWithToolsRetryTracking() helper
+   - Implemented parseSSEStreamWithTools() helper
+
+2. internal/llm/client_tools_stream_test.go (NEW)
+   - MockToolExecutor for testing
+   - 6 comprehensive test cases covering:
+     * Text-only streaming
+     * Tool calls with text response
+     * Max rounds limit
+     * Fragmented argument assembly
+     * Parallel tool calls
+     * Invalid JSON handling
+
+## Implementation Details
+
+### Delta Buffering Pattern
+- OnDelta callback fires for each text fragment
+- Tool-call arguments accumulated in map[int]*pendingToolCall keyed by index
+- Arguments assembled via strings.Builder before JSON parsing
+
+### Tool-Call Accumulation
+- Index-based keying handles parallel tool calls
+- ID and name fields accumulated across deltas (if fragment.ID != "" { p.id = fragment.ID })
+- Arguments concatenated as JSON fragments arrive
+
+### Error Handling
+- Invalid JSON arguments: tool response content = "error: invalid JSON arguments"
+- Tool execution errors: tool response content = "error: <exec error>"
+- Stream errors: propagated with context
+
+### Multi-Round Loop
+- Continues until finish_reason="stop" or max rounds exceeded
+- Tool results appended to message history per OpenAI protocol
+- Preserves ChatWithTools (non-streaming) for classifiers
+
+## Test Coverage
+
+✓ NoToolCalls_StreamsText: Validates text-only streaming and OnDelta firing
+✓ OneToolCall_ThenStreamsText: Validates tool execution and second-round text
+✓ MaxRounds_StopsGracefully: Validates loop termination at max rounds
+✓ FragmentedArguments_AssembledBeforeExec: Validates argument assembly from 4 fragments
+✓ ParallelToolCalls: Validates multiple tool calls in single response
+✓ InvalidArgsJSON_ReportsError: Validates error handling for malformed JSON
+
+## Compliance
+
+✓ TDD: Tests written first, implementation follows
+✓ Standard library only: No external SSE dependencies
+✓ Edge cases handled: ID/name split across deltas, fragmented args, invalid JSON
+✓ ChatWithTools preserved: Non-streaming path unchanged
+✓ No classifier impact: Classifiers continue using non-streaming ChatWithModel
+✓ Audit logging: Tool calls logged at DEBUG level with truncated args

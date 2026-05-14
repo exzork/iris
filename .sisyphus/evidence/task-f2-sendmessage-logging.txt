@@ -1,0 +1,38 @@
+BLOCKER 1: SendMessage errors ignored - FIXED
+
+File: internal/orchestrator/orchestrator.go
+Lines modified: 281-287
+
+BEFORE:
+	chunks := SplitMessage(resp, DiscordMessageLimit)
+	for _, chunk := range chunks {
+		if ctx.Err() != nil {
+			return
+		}
+		_ = o.cfg.Discord.SendMessage(ctx, event.GuildID, event.ChannelID, chunk)
+	}
+
+AFTER:
+	chunks := SplitMessage(resp, DiscordMessageLimit)
+	for i, chunk := range chunks {
+		if ctx.Err() != nil {
+			return
+		}
+		if err := o.cfg.Discord.SendMessage(ctx, event.GuildID, event.ChannelID, chunk); err != nil {
+			slog.WarnContext(ctx, "failed to send message chunk",
+				"guild_id", event.GuildID,
+				"channel_id", event.ChannelID,
+				"chunk_index", i,
+				"error", err.Error())
+		}
+	}
+
+Changes:
+- Added loop index `i` to track chunk position
+- Captured SendMessage error instead of ignoring with `_`
+- Log error at WARN level using slog.WarnContext
+- Include guild_id, channel_id, chunk_index, and error text in log
+- Continue processing remaining chunks on error (no break)
+
+Logger API used: log/slog (standard library)
+Test added: TestSendMessageErrorIsLogged (line 909)

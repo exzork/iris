@@ -1,0 +1,23 @@
+# T3 Main.go Wiring Output
+
+## Grep Results: Tool-Calling References
+
+314:		if err := registry.Register(&tools.ToolDefinition{Tool: tool}); err != nil {
+342:		ToolsLLM:               &wireadapters.ToolCallingLLMAdapter{Client: chatClient},
+343:		ToolExecutor:           &wireadapters.RegistryExecutor{Reg: registry},
+344:		Tools:                  registry.OpenAIFunctions(),
+
+## Build Verification
+
+CGO_ENABLED=0 go build -o /tmp/iris-bot-test ./cmd/iris-bot
+Build successful
+
+## Summary
+
+All four required references present in main.go:
+1. registry.Register() - websearch tool registration (line 314)
+2. ToolsLLM adapter wiring (line 342)
+3. ToolExecutor adapter wiring (line 343)
+4. Tools slice populated from registry.OpenAIFunctions() (line 344)
+
+Build passes with CGO disabled (static binary compatible).

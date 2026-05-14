@@ -1,0 +1,4 @@
+=== RUN   TestE2EDebugAuditAndContext
+--- PASS: TestE2EDebugAuditAndContext (0.50s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.504s

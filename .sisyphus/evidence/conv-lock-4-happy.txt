@@ -1,0 +1,4 @@
+=== RUN   TestActiveConversationHappyPath
+--- PASS: TestActiveConversationHappyPath (0.11s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.109s

@@ -1,0 +1,43 @@
+F1 COMPLIANCE FIX #3: Wire BehaviorProfileService.UpdateFromSamples into Runtime
+==================================================================================
+
+VERIFICATION COMPLETED: 2026-05-12T10:46:39Z
+
+CODE REVIEW:
+- File: internal/orchestrator/orchestrator.go
+  - Lines 56-58: BehaviorUpdater interface defined
+  - Line 78: BehaviorUpdater field added to Config struct
+  - Lines 312-320: handle() method spawns goroutine calling UpdateFromMessage when:
+    * o.cfg.BehaviorUpdater != nil
+    * event.Message != nil && event.GuildID > 0 && event.UserID > 0 && !event.IsBot
+    * Non-blocking: wrapped in go func() { ... }()
+
+- File: internal/app/wire/adapters.go
+  - Lines 479-548: BehaviorProfileUpdateAdapter implements buffering logic
+    * Buffers samples by (guildID, userID) key
+    * Flushes when buffer >= 5 samples OR 10 minutes elapsed
+    * Thread-safe with sync.Mutex
+    * Spawns goroutine for flush (non-blocking)
+  - Line 550: Type assertion confirms BehaviorUpdater interface compliance
+
+- File: cmd/iris-bot/main.go
+  - Lines 396-406: BehaviorProfileService created and wrapped in adapter
+  - Line 418: BehaviorUpdater passed to orchestrator.Config
+
+TEST RESULTS:
+✓ TestBehaviorProfileUpdater_CallsServiceWithSamples - PASS
+✓ TestBehaviorProfileUpdater_SkipsWhenNilService - PASS
+✓ TestBehaviorProfileUpdateAdapter_BuffersAndFlushes - PASS
+  - Verifies buffer threshold (5 samples)
+  - Verifies service called after threshold reached
+  - Verifies correct guild/user scoping
+
+LSP DIAGNOSTICS:
+✓ All modified files - No errors
+
+COMPLIANCE STATUS: PASS
+- BehaviorUpdater interface defined ✓
+- Wired into orchestrator.Config ✓
+- Called from handle() in non-blocking goroutine ✓
+- BehaviorProfileUpdateAdapter buffers and flushes correctly ✓
+- Tests verify buffering and flushing behavior ✓

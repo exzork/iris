@@ -1,0 +1,23 @@
+F1 COMPLIANCE FIX #1: Memory/Behavior Role is "user" not "system"
+================================================================
+
+VERIFICATION COMPLETED: 2026-05-12T10:46:39Z
+
+CODE REVIEW:
+- File: internal/orchestrator/context_builder.go
+- Lines 181, 187: Both untrusted memory block and user behavior hints block use role: "user"
+- Confirmed: Memory and behavior blocks are NEVER emitted with system/developer role
+
+TEST RESULTS:
+✓ TestContextBuilder_MemoryNotSystemInstruction - PASS
+✓ TestContextBuilder_BehaviorNotSystemInstruction - PASS
+✓ TestContextBuilder_MemoryAndBehaviorNeverSystemRole - PASS
+
+LSP DIAGNOSTICS:
+✓ internal/orchestrator/context_builder.go - No errors
+✓ internal/orchestrator/context_builder_memory_test.go - No errors
+
+COMPLIANCE STATUS: PASS
+- Memory blocks use role: "user" ✓
+- Behavior hints use role: "user" ✓
+- Tests verify non-system role enforcement ✓

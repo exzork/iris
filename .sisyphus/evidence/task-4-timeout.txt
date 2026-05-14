@@ -1,0 +1,4 @@
+=== RUN   TestFakeDiscordClientContextTimeout
+--- PASS: TestFakeDiscordClientContextTimeout (0.01s)
+PASS
+ok  	github.com/eko/iris-bot/internal/testutil	0.014s

@@ -1,0 +1,4 @@
+=== RUN   TestHTTPProviderNormalizesResults
+--- PASS: TestHTTPProviderNormalizesResults (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/tools/websearch	0.005s

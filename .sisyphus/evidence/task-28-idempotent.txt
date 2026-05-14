@@ -1,0 +1,17 @@
+Task 28: Meme Reaction and Ranking System - Evidence
+
+QA Scenario: duplicate reaction idempotent
+Tool: Go test
+Preconditions: same user reacts twice to same meme
+Steps:
+  1. Create meme in guild 1
+  2. Record upvote from user 42 for the meme
+  3. Record same upvote from user 42 for the meme again
+  4. Query meme score
+Expected Result: score counted once (not doubled)
+Actual Result: PASS - TestRecordReactionIdempotent
+  - First RecordReaction: score = 1
+  - Second RecordReaction (same user, same kind): score remains 1
+  - UpsertReaction is idempotent per (memeID, userID)
+  - CountReactions returns up=1, down=0
+Evidence: internal/memerank/service_test.go::TestRecordReactionIdempotent

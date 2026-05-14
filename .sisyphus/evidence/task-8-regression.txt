@@ -1,0 +1,62 @@
+=== go mod tidy check ===
+=== go vet ===
+=== go build ===
+=== go test ./... ===
+ok  	github.com/eko/iris-bot/cmd/iris-bot	2.027s
+?   	github.com/eko/iris-bot/cmd/migrate	[no test files]
+ok  	github.com/eko/iris-bot/internal/admin	0.011s
+ok  	github.com/eko/iris-bot/internal/app	0.025s
+ok  	github.com/eko/iris-bot/internal/app/wire	0.019s
+ok  	github.com/eko/iris-bot/internal/bootstrap	0.026s
+ok  	github.com/eko/iris-bot/internal/config	0.025s
+ok  	github.com/eko/iris-bot/internal/discord	0.430s
+ok  	github.com/eko/iris-bot/internal/domain	0.027s
+ok  	github.com/eko/iris-bot/internal/llm	15.486s
+ok  	github.com/eko/iris-bot/internal/logger	0.007s
+ok  	github.com/eko/iris-bot/internal/lore/browser	0.020s
+ok  	github.com/eko/iris-bot/internal/lore/ingest	0.013s
+ok  	github.com/eko/iris-bot/internal/lore/rag	0.003s
+ok  	github.com/eko/iris-bot/internal/lore/source	0.020s
+ok  	github.com/eko/iris-bot/internal/memerank	0.021s
+ok  	github.com/eko/iris-bot/internal/memory	0.007s
+ok  	github.com/eko/iris-bot/internal/obs	0.032s
+ok  	github.com/eko/iris-bot/internal/orchestrator	2.160s
+ok  	github.com/eko/iris-bot/internal/persona	0.016s
+ok  	github.com/eko/iris-bot/internal/reminder	0.022s
+ok  	github.com/eko/iris-bot/internal/repository	1.252s
+ok  	github.com/eko/iris-bot/internal/router	0.018s
+ok  	github.com/eko/iris-bot/internal/safety	0.014s
+ok  	github.com/eko/iris-bot/internal/settings	0.019s
+ok  	github.com/eko/iris-bot/internal/testutil	0.064s
+ok  	github.com/eko/iris-bot/internal/tools	0.208s
+ok  	github.com/eko/iris-bot/internal/tools/canoncheck	0.023s
+ok  	github.com/eko/iris-bot/internal/tools/charlookup	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/convsummary	0.004s
+ok  	github.com/eko/iris-bot/internal/tools/itemlookup	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/memesearch	0.003s
+ok  	github.com/eko/iris-bot/internal/tools/patchnotes	0.015s
+ok  	github.com/eko/iris-bot/internal/tools/websearch	1.007s
+=== migration files smoke check ===
+✓ Both migration files present (001_init.sql, 002_channel_context.sql)
+=== doc checks ===
+OK: README.md :: ## Overview
+OK: README.md :: ## Quickstart
+OK: README.md :: ## Discord Message Content Intent
+OK: README.md :: ## Environment Variables
+OK: README.md :: ## Docker Compose
+OK: README.md :: ## Running Migrations
+OK: README.md :: ## Admin Commands
+OK: README.md :: ## Development
+OK: docs/runbook.md :: ## Prerequisites
+OK: docs/runbook.md :: ## Initial Deployment
+OK: docs/runbook.md :: ## Troubleshooting
+OK: docs/runbook.md :: ## Rotating Secrets
+OK: docs/admin-commands.md :: !iris help
+OK: docs/admin-commands.md :: !iris exception add
+OK: docs/architecture.md :: ## Event Flow
+OK: docs/architecture.md :: ## Data Layer
+OK: docs/architecture.md :: ## Lore Retrieval
+OK: docs/architecture.md :: ## Safety
+Doc check PASSED
+Persona claim check PASSED
+regression: OK

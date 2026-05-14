@@ -1,0 +1,42 @@
+=== RUN   TestAllowedChannelRepo
+=== RUN   TestAllowedChannelRepo/Add_and_IsAllowed
+=== RUN   TestAllowedChannelRepo/IsAllowed_returns_false_for_non-allowed_channel
+=== RUN   TestAllowedChannelRepo/HasAny_distinguishes_empty_from_denied_state
+=== RUN   TestAllowedChannelRepo/ListByGuild
+=== RUN   TestAllowedChannelRepo/Remove
+--- PASS: TestAllowedChannelRepo (0.07s)
+    --- PASS: TestAllowedChannelRepo/Add_and_IsAllowed (0.00s)
+    --- PASS: TestAllowedChannelRepo/IsAllowed_returns_false_for_non-allowed_channel (0.00s)
+    --- PASS: TestAllowedChannelRepo/HasAny_distinguishes_empty_from_denied_state (0.00s)
+    --- PASS: TestAllowedChannelRepo/ListByGuild (0.00s)
+    --- PASS: TestAllowedChannelRepo/Remove (0.00s)
+=== RUN   TestChannelMessageRepo
+=== RUN   TestChannelMessageRepo/Upsert_and_GetByID
+=== RUN   TestChannelMessageRepo/Upsert_prunes_to_newest_20_per_guild/channel
+=== RUN   TestChannelMessageRepo/ListRecent_returns_messages_in_chronological_order
+=== RUN   TestChannelMessageRepo/Reply_metadata_round-trips
+=== RUN   TestChannelMessageRepo/MarkDeleted
+=== RUN   TestChannelMessageRepo/UpdateContent
+=== RUN   TestChannelMessageRepo/ListByUserAcrossChannels
+=== RUN   TestChannelMessageRepo/PruneOldest
+--- PASS: TestChannelMessageRepo (0.18s)
+    --- PASS: TestChannelMessageRepo/Upsert_and_GetByID (0.00s)
+    --- PASS: TestChannelMessageRepo/Upsert_prunes_to_newest_20_per_guild/channel (0.03s)
+    --- PASS: TestChannelMessageRepo/ListRecent_returns_messages_in_chronological_order (0.00s)
+    --- PASS: TestChannelMessageRepo/Reply_metadata_round-trips (0.00s)
+    --- PASS: TestChannelMessageRepo/MarkDeleted (0.00s)
+    --- PASS: TestChannelMessageRepo/UpdateContent (0.00s)
+    --- PASS: TestChannelMessageRepo/ListByUserAcrossChannels (0.01s)
+    --- PASS: TestChannelMessageRepo/PruneOldest (0.01s)
+PASS
+ok  	github.com/eko/iris-bot/internal/repository	0.250s
+
+All tests passed. Channel message repository correctly:
+- Upserts messages and retrieves by ID
+- Prunes to newest 20 per guild/channel after insert
+- Returns messages in chronological order
+- Preserves reply metadata (reply_to_message_id, reply_to_channel_id)
+- Marks messages as deleted
+- Updates message content with edited_at timestamp
+- Lists messages by user across channels within time window
+- Prunes oldest messages keeping specified count

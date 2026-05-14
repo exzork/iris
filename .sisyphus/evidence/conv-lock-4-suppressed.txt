@@ -1,0 +1,4 @@
+=== RUN   TestActiveConversationRelevanceFalse
+--- PASS: TestActiveConversationRelevanceFalse (0.01s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.009s

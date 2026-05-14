@@ -1,0 +1,185 @@
+================================================================================
+F3 REAL MANUAL QA - FINAL VERIFICATION WAVE
+================================================================================
+Timestamp: 2026-05-13T14:56:06Z
+Plan: .sisyphus/plans/iris-lore-thread-protocol.md
+Repo: /home/eko/iris
+Bot: docker compose (Task 13 recreated)
+
+================================================================================
+CHECK 1: QA DRY-RUN SCRIPT VALIDATION
+================================================================================
+Status: PASS ✓
+Exit Code: 0
+
+Verification:
+- Script executed with --dry-run flag
+- All required env vars validated (DISCORD_BOT_TOKEN, QA_GUILD_ID, QA_CHANNEL_ID)
+- Planned steps include:
+  ✓ Enable feature, post lore + non-lore messages
+  ✓ Wait idle duration (5m)
+  ✓ Verify thread creation
+  ✓ Verify summary excludes non-lore
+  ✓ Verify reply context anchoring
+  ✓ Disable feature
+  ✓ Verify no thread creation when disabled
+
+Evidence: .sisyphus/evidence/f3-qa-dry-run.txt
+
+================================================================================
+CHECK 2: E2E RACE DETECTOR TESTS
+================================================================================
+Status: FAIL ✗
+Exit Code: 1
+
+Failures Detected:
+- TestE2EDebugAuditAndContext: DATA RACE detected
+  Location: internal/orchestrator/orchestrator_e2e_test.go:49 (fakeSendRecorder.SendMessage)
+  Issue: Concurrent write/read on fakeSendRecorder.messages slice without synchronization
+  
+- TestE2ESimilarityInWindowRelevance: DATA RACE detected
+  Location: internal/orchestrator/orchestrator_sim_e2e_test.go:208
+  Issue: Same fakeSendRecorder race condition
+
+Root Cause: The test fake recorder (fakeSendRecorder) is not thread-safe. The 
+orchestrator worker goroutine writes to the messages slice while the test 
+goroutine reads it concurrently without mutex protection.
+
+Evidence: .sisyphus/evidence/f3-e2e-race.txt
+
+================================================================================
+CHECK 3: TASK 13 STARTUP LOGS & MIGRATIONS
+================================================================================
+Status: PASS ✓
+
+Startup Logs Analysis:
+✓ Bot started without panic
+✓ Model resolver ready
+✓ Memory startup enabled
+✓ Context classifier backend=similarity
+✓ MCP supervisor loaded (twitter timeout noted but non-blocking)
+✓ Discord gateway connected
+✓ Slash commands registered for guilds
+✓ No lore worker status logged (feature likely disabled by default)
+
+Migrations Present:
+✓ lore_sessions table exists
+✓ lore_thread_anchors table exists
+✓ lore_guild_settings table exists
+✓ lore_thread_counters table exists
+
+Evidence: 
+- .sisyphus/evidence/task-13-startup-logs.txt
+- .sisyphus/evidence/task-13-migrations.txt
+
+================================================================================
+CHECK 4: FULL TEST SUITE
+================================================================================
+Status: FAIL ✗
+Exit Code: 1
+
+Test Results Summary:
+- Total packages: 40
+- Passed: 37 packages
+- Failed: 3 packages
+
+Failed Packages:
+1. internal/orchestrator (FAIL)
+   - Race conditions in E2E tests (see Check 2)
+   
+2. internal/repository (FAIL)
+   - TestChannelMessageRepo: Multiple failures
+     * Deadlock detected in upsert operations
+     * Foreign key constraint violations (guild_id_fkey)
+     * Expected messages not found after pruning
+   
+   - TestLoreGuildSettingsRepo: Failures
+     * Foreign key constraint violations
+     * No rows in result set errors
+
+Root Causes:
+1. Race condition in test fake (orchestrator)
+2. Foreign key constraint issues in repository tests
+   - Tests may not be properly setting up guild records
+   - Deadlock suggests concurrent access issues in test DB
+
+Evidence: .sisyphus/evidence/f3-full-test-suite.txt
+
+================================================================================
+OPERATIONAL CONCERNS OBSERVED
+================================================================================
+
+1. CRITICAL: Test Suite Failures
+   - E2E tests have data races in test infrastructure (fakeSendRecorder)
+   - Repository tests have foreign key and deadlock issues
+   - These are pre-existing issues, not specific to lore thread implementation
+   - However, they block the "go test ./... -count=1" acceptance criterion
+
+2. CRITICAL: Race Condition in Test Infrastructure
+   - fakeSendRecorder.messages is accessed concurrently without synchronization
+   - Affects: TestE2EDebugAuditAndContext, TestE2ESimilarityInWindowRelevance
+   - Impact: Cannot verify E2E behavior under race detector
+
+3. MEDIUM: Repository Test Isolation
+   - Foreign key constraint failures suggest test setup issues
+   - Deadlock in concurrent upsert suggests test DB contention
+   - May indicate tests are not properly isolated or cleaning up
+
+4. MEDIUM: Lore Worker Status Not Logged
+   - Startup logs do not show explicit lore worker status
+   - Feature flag may be disabled by default (as designed)
+   - Cannot verify lore worker initialization from logs alone
+
+5. LOW: Twitter MCP Timeout
+   - Non-blocking, as designed
+   - Bot continues startup normally
+
+================================================================================
+SUMMARY TABLE
+================================================================================
+
+| Check | Name                          | Status | Exit Code | Notes                    |
+|-------|-------------------------------|--------|-----------|--------------------------|
+| 1     | QA Dry-Run Script             | PASS   | 0         | All steps planned        |
+| 2     | E2E Race Detector Tests       | FAIL   | 1         | Data races in test fake  |
+| 3     | Task 13 Startup & Migrations  | PASS   | N/A       | All tables present       |
+| 4     | Full Test Suite               | FAIL   | 1         | Pre-existing issues      |
+
+================================================================================
+VERDICT: REJECT
+================================================================================
+
+REASON: Test suite does not pass. The plan's Definition of Done requires:
+  "go test ./... -count=1 passes"
+
+Current Status:
+- Exit code: 1 (FAILURE)
+- 3 packages failed
+- E2E tests have data races
+- Repository tests have foreign key/deadlock issues
+
+WHAT NEEDS TO BE FIXED:
+
+1. Fix fakeSendRecorder race condition
+   - Add mutex protection to messages slice
+   - Or use atomic operations / channels
+   - File: internal/orchestrator/orchestrator_e2e_test.go
+
+2. Fix repository test foreign key violations
+   - Ensure test setup creates guild records before inserting messages
+   - Verify test isolation and cleanup
+   - File: internal/repository/repository_test.go
+
+3. Investigate deadlock in concurrent upsert tests
+   - May need to adjust test concurrency or DB transaction handling
+   - File: internal/repository/channel_context_test.go
+
+NOTES:
+- QA dry-run script is well-designed and captures all required scenarios
+- Migrations are correctly applied and tables exist
+- Bot startup is clean (no panics)
+- These test failures appear to be pre-existing infrastructure issues,
+  not specific to the lore thread implementation
+- However, they must be resolved before final approval
+
+================================================================================

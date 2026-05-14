@@ -1,0 +1,9 @@
+=== CURL OUTPUT ===
+{"query": "hello", "number_of_results": 0, "results": [{"url": "https://www.hellomagazine.com/", "title": "HELLO! - Daily royal, celebrity, fashion, beauty & lifestyle news", "content": "HELLO! brings you the latest celebrity & royal news from the UK & around the world, magazine exclusives, fashion, beauty, lifestyle news, celeb babies, weddings, pregnancies and more!", "thumbnail": null, "engine": "google", "template": "default.html", "parsed_url": ["https", "www.hellomagazine.com", "/", "", ""
+
+=== BOT STARTUP LOGS ===
+iris-bot  | {"time":"2026-05-12T03:55:29.8147578Z","level":"INFO","msg":"iris-bot starting"}
+iris-bot  | {"time":"2026-05-12T03:55:30.036961544Z","level":"INFO","msg":"context classifier backend=similarity","threshold":0.55}
+iris-bot  | {"time":"2026-05-12T03:55:30.038123796Z","level":"INFO","msg":"websearch tool registered","provider":"searxng","base_url":"http://searxng:8080"}
+iris-bot  | {"time":"2026-05-12T03:55:30.939095609Z","level":"INFO","msg":"Discord gateway connected"}
+iris-bot  | {"time":"2026-05-12T03:55:30.93926756Z","level":"INFO","msg":"auto-derived bot ID from session","botID":1503373336879566959}

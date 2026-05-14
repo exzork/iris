@@ -1,0 +1,54 @@
+FROM golang:1.26-bookworm AS build
+WORKDIR /src
+
+# Install system dependencies for CGO and ONNX
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy pre-built onnxruntime libraries from build context
+COPY vendor/libs/libonnxruntime.so* /usr/local/lib/
+COPY vendor/libs/libtokenizers.a /usr/local/lib/
+
+# Create onnxruntime include directory (minimal headers for linking)
+RUN mkdir -p /usr/local/include/onnxruntime
+
+# Update library cache
+RUN ldconfig
+
+# Copy Go module files and download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source and build with CGO enabled
+COPY . .
+RUN CGO_ENABLED=1 GOOS=linux go build -trimpath -tags cgo -mod=mod -o /out/iris-bot ./cmd/iris-bot
+
+FROM debian:bookworm-slim AS runtime
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy onnxruntime libraries from build stage
+COPY --from=build /usr/local/lib/libonnxruntime.so* /usr/local/lib/
+
+# Copy binary from build stage
+COPY --from=build /out/iris-bot /usr/local/bin/iris-bot
+
+# Update library cache
+RUN ldconfig
+
+# Create non-root user
+RUN addgroup --system app && adduser --system --group app
+
+# Model files are mounted at runtime via docker-compose bind-mount
+# This keeps the image small and allows model updates without rebuilding
+RUN mkdir -p /opt/iris-models && chown -R app:app /opt/iris-models
+
+USER app
+ENTRYPOINT ["/usr/local/bin/iris-bot"]

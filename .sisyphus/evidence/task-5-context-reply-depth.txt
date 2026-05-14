@@ -1,0 +1,4 @@
+=== RUN   TestContextBuilderReplyChain
+--- PASS: TestContextBuilderReplyChain (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.011s

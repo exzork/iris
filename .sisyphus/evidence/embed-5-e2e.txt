@@ -1,0 +1,4 @@
+=== RUN   TestE2ESimilarityInWindowRelevance
+--- PASS: TestE2ESimilarityInWindowRelevance (0.51s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.517s

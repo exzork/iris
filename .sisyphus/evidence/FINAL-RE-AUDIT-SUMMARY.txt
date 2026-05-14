@@ -1,0 +1,227 @@
+================================================================================
+FINAL RE-AUDIT SUMMARY - PLAN COMPLIANCE VIOLATIONS
+================================================================================
+Date: 2026-05-12
+Time: 10:57 UTC
+Executor: Sisyphus-Junior
+Task: Re-verify 4 plan compliance violations (fresh verdict)
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+All 4 plan compliance violations have been RE-AUDITED with fresh verification.
+
+OVERALL VERDICT: ✓ APPROVE
+
+All violations are COMPLIANT. No code changes required.
+Test suite: PASS (55 packages)
+Regression: PASS
+
+================================================================================
+VIOLATION-BY-VIOLATION VERDICTS
+================================================================================
+
+┌─ V1: Memory/Behavior Role = "user" (NOT "system") ─────────────────────────┐
+│                                                                              │
+│ VERDICT: ✓ PASS                                                            │
+│                                                                              │
+│ File: internal/orchestrator/context_builder.go                             │
+│ Lines: 181 (memory), 187 (behavior)                                        │
+│                                                                              │
+│ Code Evidence:                                                              │
+│   Line 181: "role": "user"  ✓                                              │
+│   Line 187: "role": "user"  ✓                                              │
+│                                                                              │
+│ Test Evidence:                                                              │
+│   ✓ TestContextBuilder_MemoryNotSystemInstruction (PASS)                   │
+│   ✓ TestContextBuilder_BehaviorNotSystemInstruction (PASS)                 │
+│   ✓ TestContextBuilder_MemoryAndBehaviorNeverSystemRole (PASS)             │
+│                                                                              │
+│ Requirement Met: Memory and behavior blocks are emitted with role="user",   │
+│ preventing prompt injection attacks where retrieved content could override  │
+│ system instructions.                                                        │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ V2: No Sync Embed in Capture Hot Path ──────────────────────────────────────┐
+│                                                                              │
+│ VERDICT: ✓ PASS                                                            │
+│                                                                              │
+│ File: internal/app/wire/adapters.go                                        │
+│ Lines: 211-226 (Capture method)                                            │
+│                                                                              │
+│ Code Evidence:                                                              │
+│   Line 206-209: ChannelCaptureAdapter struct - NO Embedder field ✓         │
+│   Line 211-226: Capture method - NO sync embedding call ✓                  │
+│   Line 225: return a.Repo.Upsert(ctx, msg) - ONLY call ✓                   │
+│   Line 224: Comment confirms async backfill ✓                              │
+│                                                                              │
+│ Wiring Evidence (cmd/iris-bot/main.go):                                    │
+│   Line 221-224: baseCapture created WITHOUT Embedder ✓                     │
+│   Line 226-247: Async embedding worker properly wired ✓                    │
+│   Line 242-247: captureChain wraps with enqueueIfMissingCapture ✓          │
+│                                                                              │
+│ Requirement Met: Capture is fast and non-blocking. Embedding happens async  │
+│ via queue, preventing Discord event handler slowdown.                      │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ V3: BehaviorUpdater Interface Wired at Runtime ──────────────────────────────┐
+│                                                                              │
+│ VERDICT: ✓ PASS                                                            │
+│                                                                              │
+│ Files: orchestrator.go, adapters.go, main.go                               │
+│                                                                              │
+│ Code Evidence:                                                              │
+│                                                                              │
+│ orchestrator.go:                                                            │
+│   Line 56-58: BehaviorUpdater interface defined ✓                          │
+│     type BehaviorUpdater interface {                                        │
+│       UpdateFromMessage(ctx context.Context, guildID, userID int64,        │
+│                         content string, createdAt time.Time) error          │
+│     }                                                                        │
+│   Line 78: Config.BehaviorUpdater field exists ✓                           │
+│   Line 312-320: Called in handle() method ✓                                │
+│     - Checks: BehaviorUpdater != nil, GuildID > 0, UserID > 0, !IsBot      │
+│     - Spawns goroutine (non-blocking)                                       │
+│     - 5s timeout context                                                    │
+│     - Calls UpdateFromMessage with all required params                      │
+│                                                                              │
+│ adapters.go:                                                                │
+│   Line 476-505: BehaviorProfileUpdateAdapter implemented ✓                 │
+│     - Buffers samples per (guild_id, user_id)                              │
+│     - Flushes when buffer hits threshold (5) or time elapsed (10 min)       │
+│     - Mutex-protected                                                       │
+│     - Calls svc.UpdateFromSamples() asynchronously                          │
+│                                                                              │
+│ main.go:                                                                    │
+│   Line 402-406: Adapter created with behaviorProfileSvc ✓                  │
+│   Line 418: Wired to orchCfg.BehaviorUpdater ✓                             │
+│                                                                              │
+│ Requirement Met: Behavior learning is async, buffered, and properly scoped  │
+│ by (guild_id, user_id). Prevents excessive database writes while learning   │
+│ in near-real-time.                                                          │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ V4: No 20-Message Prune in Upsert ──────────────────────────────────────────┐
+│                                                                              │
+│ VERDICT: ✓ PASS                                                            │
+│                                                                              │
+│ File: internal/repository/channel_context.go                               │
+│ Lines: 108-149 (Upsert method)                                             │
+│                                                                              │
+│ Code Evidence:                                                              │
+│   Line 108-149: Upsert method                                              │
+│     - Line 120-131: INSERT ... ON CONFLICT DO UPDATE ✓                     │
+│     - Line 133-138: tx.Exec with insert parameters ✓                       │
+│     - Line 143-146: tx.Commit directly after insert ✓                      │
+│     - NO DELETE statement ✓                                                │
+│     - NO OFFSET clause ✓                                                   │
+│     - NO prune logic ✓                                                     │
+│                                                                              │
+│   Line 151-167: PruneOldest method (separate, not called from Upsert) ✓    │
+│     - Only called explicitly by tests                                       │
+│     - Not invoked during normal capture flow                                │
+│                                                                              │
+│ Test Evidence:                                                              │
+│   ✓ TestChannelMessageRepo_UpsertDoesNotPrune (PASS)                       │
+│   ✓ Upsert_does_not_prune_messages_(stores_all_indefinitely) (PASS)        │
+│     - Inserts 25 messages in same guild/channel                            │
+│     - Verifies all 25 remain (no pruning)                                  │
+│     - Verifies newest message ID is 2025                                   │
+│                                                                              │
+│ Requirement Met: Messages are stored indefinitely per plan requirement.     │
+│ No automatic pruning happens during capture. PruneOldest available for      │
+│ future admin/retention policies.                                            │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+COMPREHENSIVE VERIFICATION RESULTS
+================================================================================
+
+Test Suite Execution:
+  Command: cd /home/eko/iris && go test ./... -count=1
+  Result: ✓ PASS
+  Packages: 55 packages tested
+  Duration: ~57 seconds
+  Status: All packages OK
+
+Regression Test Execution:
+  Command: cd /home/eko/iris && bash scripts/regression.sh
+  Result: ✓ PASS
+  Checks:
+    ✓ Migration files smoke check (001_init.sql, 002_channel_context.sql)
+    ✓ Doc checks (README.md, docs/runbook.md, docs/admin-commands.md, docs/architecture.md)
+    ✓ Persona claim check
+    ✓ All regression tests passed
+
+Code Quality:
+  ✓ go vet: No errors
+  ✓ LSP diagnostics: Clean
+  ✓ No code changes required (all violations already satisfied)
+
+================================================================================
+FINAL VERDICT
+================================================================================
+
+OVERALL STATUS: ✓ APPROVE
+
+All 4 plan compliance violations are COMPLIANT and VERIFIED.
+
+The implementation correctly enforces all plan constraints:
+
+1. ✓ Memory/behavior blocks use role="user"
+   → Prevents prompt injection via retrieved content
+   → Tests enforce this constraint
+
+2. ✓ Capture hot path has NO sync embedding
+   → Discord event handler remains fast and non-blocking
+   → Async EmbeddingWorker handles embedding separately
+
+3. ✓ BehaviorUpdater interface wired at runtime
+   → Behavior learning happens async with buffering
+   → Samples buffered per (guild_id, user_id)
+   → Flushes when buffer hits 5 or 10 min elapsed
+
+4. ✓ No 20-message prune in Upsert
+   → Messages stored indefinitely per plan requirement
+   → PruneOldest available for future admin policies
+   → All 25 test messages preserved
+
+Code Quality: CLEAN
+Test Coverage: COMPREHENSIVE
+Regression: PASSING
+
+Status: READY FOR PRODUCTION
+
+================================================================================
+EVIDENCE ARTIFACTS
+================================================================================
+
+.sisyphus/evidence/re-audit-verdict.txt
+  - Detailed re-audit verdict with line-by-line verification
+
+.sisyphus/evidence/FINAL-RE-AUDIT-SUMMARY.txt (this file)
+  - Comprehensive final summary with all verdicts
+
+.sisyphus/evidence/f1-fix-1-memory-role-user.txt
+.sisyphus/evidence/f1-fix-2-no-sync-embed.txt
+.sisyphus/evidence/f1-fix-3-behavior-learning.txt
+.sisyphus/evidence/f1-fix-4-no-prune.txt
+.sisyphus/evidence/f1-compliance-audit-summary.txt
+  - Original audit evidence (all violations already compliant)
+
+================================================================================
+CONCLUSION
+================================================================================
+
+Re-audit complete. All 4 plan compliance violations are SATISFIED and VERIFIED.
+
+The codebase is compliant with all plan constraints and safety requirements.
+
+Ready for Final Verification Wave (F1-F4 review agents).
+
+================================================================================

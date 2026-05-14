@@ -1,0 +1,12 @@
+PASS: Deleted reminder did not fire
+  Reminder ID: 1 was deleted
+  Messages sent: 0 (expected 0)
+
+Test: TestDeletedReminderDoesNotFire
+- Created daily reminder at 10:00 Asia/Jakarta in channel 456
+- FakeClock set to 09:59:59 Asia/Jakarta (2026-05-11 02:59:59 UTC)
+- Deleted reminder from store
+- Advanced clock by 2 seconds past scheduled fire time
+- TickOnce executed
+- Verified no messages were sent (0 messages)
+- Deleted reminders do not fire as expected

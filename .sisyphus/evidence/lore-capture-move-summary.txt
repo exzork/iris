@@ -1,0 +1,75 @@
+## Lore Capture Move - Implementation Summary
+
+### Task Completed
+Moved lore capture call in `internal/orchestrator/orchestrator.go` from AFTER the early-return on `!decision.Should` to BEFORE the router decision. This ensures lore capture fires for ALL allowed-channel messages from real users, independent of whether Iris will reply.
+
+### Changes Made
+
+#### 1. orchestrator.go - handle() method (lines 350-385)
+- **Before**: Capture call was at lines 373-385, AFTER the early return at line 369
+- **After**: Capture call moved to lines 362-376, BEFORE Router.Decide() call
+- **Key change**: Capture now fires for all messages matching:
+  - event.Message != nil
+  - event.GuildID > 0
+  - event.ChannelID > 0
+  - event.UserID > 0
+  - !event.IsBot
+- **Adapter responsibility**: The LoreCapturer adapter (internal/app/wire/lore_capture_adapter.go) handles allow-list filtering independently
+- **Non-blocking**: Capture runs in a goroutine with optional timeout (LoreCaptureTimeout)
+
+#### 2. orchestrator.go - Start() method (lines 217-230)
+- Added startup log: `lore_capture_armed` if LoreCapturer is configured
+- Added startup log: `lore_capture_disabled` if LoreCapturer is nil
+- Enables instant debugging of "is capture even running?" questions
+
+#### 3. orchestrator_test.go - Test Updates
+- **TestLoreCapturerCalledEvenWhenRouterRejects**: Renamed from TestLoreCapturerNotCalledWhenRouterRejects
+  - Changed expectation: capture MUST fire even when router rejects (decision.Should=false)
+  - Uses waitUntil() to verify async capture call completes
+- **TestLoreCapturerNotCalledForBotMessages**: New test
+  - Verifies bot messages are still excluded (event.IsBot=true)
+  - Confirms pre-conditions are enforced at orchestrator level
+
+### Verification Results
+
+#### Tests
+- `go test ./internal/orchestrator -count=1`: ✅ PASS (all 6 capture tests pass)
+- `go test ./... -count=1`: ✅ PASS (all 33 packages pass)
+- `go build ./...`: ✅ SUCCESS (no errors)
+
+#### Docker Build & Deployment
+- `docker compose build bot`: ✅ SUCCESS
+- `docker compose up -d --force-recreate bot`: ✅ SUCCESS
+- Startup logs confirm: `lore_capture_armed` logged at 2026-05-14T07:31:39.262Z
+- Lore worker started: `lore_worker_started` logged at 2026-05-14T07:31:39.262Z
+- Lore finalize tool registered: `lore_finalize_now tool registered` logged at 2026-05-14T07:31:39.262Z
+
+### Bug Class Identified
+**"Capture gated on decision.Should silently swallowed all non-trigger lore chatter"**
+
+Root cause: The capture call was placed AFTER the early return on `!decision.Should`. This meant:
+- Messages that didn't trigger a reply (no @mention, no active conversation lock) were never captured
+- Result: `lore_sessions` table remained empty despite active channel chatter
+- Only messages that triggered Iris to reply were captured, creating a false signal
+
+### Architecture Notes
+- The adapter pattern (LoreCapturer in wire/lore_capture_adapter.go) correctly handles:
+  - Bot self-message exclusion (event.UserID == botID)
+  - Bot message exclusion (event.IsBot)
+  - DM exclusion (event.GuildID == 0)
+  - Allow-list filtering (HasAny + IsAllowed checks)
+- Orchestrator now delegates filtering to the adapter, avoiding duplication
+- Capture is non-blocking and respects LoreCaptureTimeout configuration
+
+### Files Modified
+1. internal/orchestrator/orchestrator.go (2 changes)
+   - Move capture call before Router.Decide()
+   - Add startup logs in Start()
+2. internal/orchestrator/orchestrator_test.go (2 changes)
+   - Rename and update TestLoreCapturerNotCalledWhenRouterRejects
+   - Add TestLoreCapturerNotCalledForBotMessages
+
+### Next Steps
+- Monitor lore_sessions table population in production
+- Verify capture fires for non-trigger messages in allowed channels
+- Confirm lore thread creation and summarization work end-to-end

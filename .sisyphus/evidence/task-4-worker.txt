@@ -1,0 +1,16 @@
+=== RUN   TestNewEmbeddingWorker_RejectsDimensionMismatch
+    embedding_worker_test.go:92: fake embedder is 384-dim, skipping dim test via NewFakeEmbedder
+--- SKIP: TestNewEmbeddingWorker_RejectsDimensionMismatch (0.00s)
+=== RUN   TestEmbeddingWorker_ProcessesQueuedJob
+--- PASS: TestEmbeddingWorker_ProcessesQueuedJob (0.01s)
+=== RUN   TestEmbeddingWorker_RetriesThenGivesUp
+2026/05/12 09:04:47 WARN embedding_worker_embed_failed worker=0 guild=1 message=2 attempt=1 error="transient embed failure"
+2026/05/12 09:04:47 WARN embedding_worker_embed_failed worker=0 guild=1 message=2 attempt=2 error="transient embed failure"
+2026/05/12 09:04:47 ERROR embedding_worker_gave_up guild=1 message=2 attempts=2
+--- PASS: TestEmbeddingWorker_RetriesThenGivesUp (0.30s)
+=== RUN   TestEmbeddingWorker_BackfillEmbedsPendingRows
+--- PASS: TestEmbeddingWorker_BackfillEmbedsPendingRows (0.01s)
+=== RUN   TestEmbeddingWorker_StopsOnContextCancel
+--- PASS: TestEmbeddingWorker_StopsOnContextCancel (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/memory	0.325s

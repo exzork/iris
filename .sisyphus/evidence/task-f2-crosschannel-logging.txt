@@ -1,0 +1,32 @@
+BLOCKER 2: CrossChannel classifier errors ignored - FIXED
+
+File: internal/orchestrator/orchestrator.go
+Lines modified: 254-263
+
+BEFORE:
+	if o.cfg.CrossChannel != nil {
+		crossChannel, _ = o.cfg.CrossChannel.Classify(ctx, event)
+	}
+
+AFTER:
+	if o.cfg.CrossChannel != nil {
+		var err error
+		crossChannel, err = o.cfg.CrossChannel.Classify(ctx, event)
+		if err != nil {
+			slog.WarnContext(ctx, "cross-channel classification failed",
+				"guild_id", event.GuildID,
+				"channel_id", event.ChannelID,
+				"message_id", event.Message.ID,
+				"error", err.Error())
+		}
+	}
+
+Changes:
+- Captured Classify error instead of ignoring with `_`
+- Log error at WARN level using slog.WarnContext
+- Include guild_id, channel_id, message_id, and error text in log
+- Fallback behavior preserved: crossChannel remains nil, context builder uses current-channel only
+- Response still proceeds (no early return on error)
+
+Logger API used: log/slog (standard library)
+Test added: TestCrossChannelErrorIsLogged (line 933)

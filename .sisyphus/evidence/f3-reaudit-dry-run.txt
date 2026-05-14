@@ -1,0 +1,26 @@
+[INFO] DRY RUN MODE - No network calls will be made
+
+Planned steps:
+  1. Validate env vars: DISCORD_BOT_TOKEN, QA_GUILD_ID, QA_CHANNEL_ID
+  2. Enable lore threads for QA_GUILD_ID via DB
+  3. Post 3 test messages (2 lore, 1 non-lore) to QA_CHANNEL_ID
+  4. Wait idle duration: 5m
+  5. Verify exactly 1 thread created in QA_CHANNEL_ID
+  6. Verify thread title ≤80 chars and non-empty
+  7. Verify first thread message is non-empty and Bahasa Indonesia-dominant
+  8. Verify non-lore message content does NOT appear in summary
+  9. Verify DB lore_thread_anchors row exists for thread
+ 10. Post reply in thread; verify bot response includes anchor context
+ 11. Disable lore threads via DB
+ 12. Post 3 more lore messages
+ 13. Wait idle duration: 5m
+ 14. Verify NO new thread was created
+ 15. Write binary pass/fail report to: /home/eko/iris/.sisyphus/evidence/task-12-manual-qa.txt
+
+Environment:
+  QA_GUILD_ID: 123
+  QA_CHANNEL_ID: 456
+  IDLE_DURATION: 5m
+  DB_HOST: localhost
+  DB_PORT: 5432
+

@@ -1,0 +1,4 @@
+=== RUN   TestDecideIncludeListModeAllowedChannel
+--- PASS: TestDecideIncludeListModeAllowedChannel (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/router	0.003s

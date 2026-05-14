@@ -1,0 +1,22 @@
+=== RUN   TestSimilarityInWindow_AboveThreshold_True
+--- PASS: TestSimilarityInWindow_AboveThreshold_True (0.00s)
+=== RUN   TestSimilarityInWindow_BelowThreshold_False
+--- PASS: TestSimilarityInWindow_BelowThreshold_False (0.00s)
+=== RUN   TestSimilarityInWindow_EmptyContext_False
+--- PASS: TestSimilarityInWindow_EmptyContext_False (0.00s)
+=== RUN   TestSimilarityInWindow_NilEmbedder_ReturnsError
+--- PASS: TestSimilarityInWindow_NilEmbedder_ReturnsError (0.00s)
+=== RUN   TestSimilarityInWindow_EmbedError_ReturnsFalseErr
+--- PASS: TestSimilarityInWindow_EmbedError_ReturnsFalseErr (0.00s)
+=== RUN   TestSimilarityInWindow_UsesStoredEmbeddingsWhenPresent
+--- PASS: TestSimilarityInWindow_UsesStoredEmbeddingsWhenPresent (0.00s)
+=== RUN   TestSimilarityInWindow_FallsBackWhenEmbeddingMissing
+--- PASS: TestSimilarityInWindow_FallsBackWhenEmbeddingMissing (0.00s)
+=== RUN   TestSimilarityInWindow_CentroidIsL2Normalized
+--- PASS: TestSimilarityInWindow_CentroidIsL2Normalized (0.00s)
+=== RUN   TestSimilarityInWindow_DefaultThreshold
+--- PASS: TestSimilarityInWindow_DefaultThreshold (0.00s)
+=== RUN   TestSimilarityInWindow_DefaultMinContext
+--- PASS: TestSimilarityInWindow_DefaultMinContext (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	1.014s

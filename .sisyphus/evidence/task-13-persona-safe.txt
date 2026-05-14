@@ -1,0 +1,4 @@
+=== RUN   TestScenarioBPersonaOverride
+--- PASS: TestScenarioBPersonaOverride (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/memory	0.005s

@@ -1,0 +1,24 @@
+# Task 14: Non-Admin Denial Test Evidence
+
+## Scenario: Non-admin user attempts to mutate config
+
+Test: TestRequireAdminDeniesNonAdmin
+- User: non-admin (IsOwner=false, Permissions=0, RoleIDs=[])
+- Command: exception add 999
+- Expected: Denial response in Indonesian
+- Actual: "Mohon maaf, hanya admin server yang dapat mengubah konfigurasi I.R.I.S."
+- Store calls: 0 (no mutation)
+- Audit logs: 0 (no logging)
+- Result: PASS
+
+Test: TestDispatcherIntegrationWithAuth
+- User: non-admin
+- Command: !iris exception add 999
+- Expected: Denial response, no store mutation
+- Actual: "Mohon maaf, hanya admin server yang dapat mengubah konfigurasi I.R.I.S."
+- Store calls: 0
+- Result: PASS
+
+## Conclusion
+Non-admin users are properly denied with Indonesian refusal message.
+No side effects (no DB mutations, no audit logs).

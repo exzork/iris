@@ -1,0 +1,60 @@
+=== go mod tidy check ===
+=== go vet ===
+=== go build ===
+=== go test ./... ===
+?   	github.com/eko/iris-bot/cmd/iris-bot	[no test files]
+?   	github.com/eko/iris-bot/cmd/migrate	[no test files]
+ok  	github.com/eko/iris-bot/internal/admin	0.019s
+ok  	github.com/eko/iris-bot/internal/app	0.022s
+ok  	github.com/eko/iris-bot/internal/bootstrap	0.018s
+ok  	github.com/eko/iris-bot/internal/config	0.022s
+ok  	github.com/eko/iris-bot/internal/discord	0.308s
+ok  	github.com/eko/iris-bot/internal/domain	0.018s
+ok  	github.com/eko/iris-bot/internal/llm	15.518s
+ok  	github.com/eko/iris-bot/internal/logger	0.002s
+ok  	github.com/eko/iris-bot/internal/lore/browser	0.018s
+ok  	github.com/eko/iris-bot/internal/lore/ingest	0.014s
+ok  	github.com/eko/iris-bot/internal/lore/rag	0.001s
+ok  	github.com/eko/iris-bot/internal/lore/source	0.002s
+ok  	github.com/eko/iris-bot/internal/memerank	0.013s
+ok  	github.com/eko/iris-bot/internal/memory	0.003s
+ok  	github.com/eko/iris-bot/internal/obs	0.018s
+ok  	github.com/eko/iris-bot/internal/orchestrator	2.346s
+ok  	github.com/eko/iris-bot/internal/persona	0.002s
+ok  	github.com/eko/iris-bot/internal/ratelimit	6.105s
+ok  	github.com/eko/iris-bot/internal/reminder	0.003s
+ok  	github.com/eko/iris-bot/internal/repository	0.577s
+ok  	github.com/eko/iris-bot/internal/router	0.003s
+ok  	github.com/eko/iris-bot/internal/safety	0.004s
+ok  	github.com/eko/iris-bot/internal/settings	0.002s
+ok  	github.com/eko/iris-bot/internal/testutil	0.063s
+ok  	github.com/eko/iris-bot/internal/tools	0.164s
+ok  	github.com/eko/iris-bot/internal/tools/canoncheck	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/charlookup	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/convsummary	0.003s
+ok  	github.com/eko/iris-bot/internal/tools/itemlookup	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/memesearch	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/patchnotes	0.003s
+ok  	github.com/eko/iris-bot/internal/tools/websearch	1.008s
+=== doc checks ===
+OK: README.md :: ## Overview
+OK: README.md :: ## Quickstart
+OK: README.md :: ## Discord Message Content Intent
+OK: README.md :: ## Environment Variables
+OK: README.md :: ## Docker Compose
+OK: README.md :: ## Running Migrations
+OK: README.md :: ## Admin Commands
+OK: README.md :: ## Development
+OK: docs/runbook.md :: ## Prerequisites
+OK: docs/runbook.md :: ## Initial Deployment
+OK: docs/runbook.md :: ## Troubleshooting
+OK: docs/runbook.md :: ## Rotating Secrets
+OK: docs/admin-commands.md :: !iris help
+OK: docs/admin-commands.md :: !iris exception add
+OK: docs/architecture.md :: ## Event Flow
+OK: docs/architecture.md :: ## Data Layer
+OK: docs/architecture.md :: ## Lore Retrieval
+OK: docs/architecture.md :: ## Safety
+Doc check PASSED
+Persona claim check PASSED
+regression: OK

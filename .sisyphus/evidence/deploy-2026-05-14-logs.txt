@@ -1,0 +1,7 @@
+iris-bot  | {"time":"2026-05-14T00:05:00.438704148Z","level":"INFO","msg":"iris-bot starting"}
+iris-bot  | {"time":"2026-05-14T00:05:00.458263067Z","level":"INFO","msg":"model resolver ready","default":"kr/claude-sonnet-4.5","strong":"kr/claude-opus-4.7","router":"kr/claude-haiku-4.5"}
+iris-bot  | {"time":"2026-05-14T00:05:00.737687799Z","level":"INFO","msg":"memory startup","enabled":true,"threshold":0.72,"top_k":5,"workers":1,"backfill_limit":500}
+iris-bot  | {"time":"2026-05-14T00:05:00.73904465Z","level":"INFO","msg":"context classifier backend=similarity","threshold":0.7}
+iris-bot  | {"time":"2026-05-14T00:05:00.739124135Z","level":"INFO","msg":"escalate tool registered"}
+iris-bot  | {"time":"2026-05-14T00:05:00.739131668Z","level":"INFO","msg":"websearch tool registered","provider":"searxng","base_url":"http://searxng:8080"}
+iris-bot  | time=2026-05-14T00:05:06.979Z level=DEBUG msg=mcp_server_stderr server=twitter line="TweetSave MCP server running via stdio"

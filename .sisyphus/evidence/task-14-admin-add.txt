@@ -1,0 +1,62 @@
+=== RUN   TestIsAdminOwner
+--- PASS: TestIsAdminOwner (0.00s)
+=== RUN   TestIsAdminWithAdministratorPermission
+--- PASS: TestIsAdminWithAdministratorPermission (0.00s)
+=== RUN   TestIsAdminWithWhitelistedRole
+--- PASS: TestIsAdminWithWhitelistedRole (0.00s)
+=== RUN   TestIsAdminNonAdmin
+--- PASS: TestIsAdminNonAdmin (0.00s)
+=== RUN   TestRequireAdminDeniesNonAdmin
+--- PASS: TestRequireAdminDeniesNonAdmin (0.00s)
+=== RUN   TestRequireAdminAllowsAdmin
+--- PASS: TestRequireAdminAllowsAdmin (0.00s)
+=== RUN   TestParseCommandBasic
+--- PASS: TestParseCommandBasic (0.00s)
+=== RUN   TestParseCommandWithQuotes
+--- PASS: TestParseCommandWithQuotes (0.00s)
+=== RUN   TestParseCommandInvalidPrefix
+--- PASS: TestParseCommandInvalidPrefix (0.00s)
+=== RUN   TestParseCommandEmpty
+--- PASS: TestParseCommandEmpty (0.00s)
+=== RUN   TestDispatcherRegisterAndDispatch
+--- PASS: TestDispatcherRegisterAndDispatch (0.00s)
+=== RUN   TestDispatcherUnknownCommand
+--- PASS: TestDispatcherUnknownCommand (0.00s)
+=== RUN   TestDispatcherInvalidFormat
+--- PASS: TestDispatcherInvalidFormat (0.00s)
+=== RUN   TestDispatcherWithSubcommand
+--- PASS: TestDispatcherWithSubcommand (0.00s)
+=== RUN   TestDispatcherIntegrationWithAuth
+--- PASS: TestDispatcherIntegrationWithAuth (0.00s)
+=== RUN   TestDispatcherIntegrationAdminAllowed
+--- PASS: TestDispatcherIntegrationAdminAllowed (0.00s)
+=== RUN   TestExceptionAddSuccess
+--- PASS: TestExceptionAddSuccess (0.00s)
+=== RUN   TestExceptionRemoveSuccess
+--- PASS: TestExceptionRemoveSuccess (0.00s)
+=== RUN   TestExceptionListSuccess
+--- PASS: TestExceptionListSuccess (0.00s)
+=== RUN   TestExceptionAddInvalidArgs
+--- PASS: TestExceptionAddInvalidArgs (0.00s)
+=== RUN   TestExceptionGuildScoping
+--- PASS: TestExceptionGuildScoping (0.00s)
+=== RUN   TestSettingsSetSuccess
+--- PASS: TestSettingsSetSuccess (0.00s)
+=== RUN   TestSettingsSetUnknownKey
+--- PASS: TestSettingsSetUnknownKey (0.00s)
+=== RUN   TestSettingsGetSuccess
+--- PASS: TestSettingsGetSuccess (0.00s)
+=== RUN   TestSettingsGetNotFound
+--- PASS: TestSettingsGetNotFound (0.00s)
+=== RUN   TestSettingsListSuccess
+--- PASS: TestSettingsListSuccess (0.00s)
+=== RUN   TestRatelimitSetSuccess
+--- PASS: TestRatelimitSetSuccess (0.00s)
+=== RUN   TestRatelimitSetInvalidScope
+--- PASS: TestRatelimitSetInvalidScope (0.00s)
+=== RUN   TestRatelimitGetSuccess
+--- PASS: TestRatelimitGetSuccess (0.00s)
+=== RUN   TestSettingsGuildScoping
+--- PASS: TestSettingsGuildScoping (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/admin	(cached)

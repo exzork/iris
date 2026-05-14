@@ -1,0 +1,5 @@
+iris-bot  | {"time":"2026-05-12T04:48:09.12828166Z","level":"INFO","msg":"iris-bot starting"}
+iris-bot  | {"time":"2026-05-12T04:48:09.48207781Z","level":"INFO","msg":"context classifier backend=similarity","threshold":0.45}
+iris-bot  | {"time":"2026-05-12T04:48:09.482224339Z","level":"INFO","msg":"websearch tool registered","provider":"searxng","base_url":"http://searxng:8080"}
+iris-bot  | {"time":"2026-05-12T04:48:10.335578531Z","level":"INFO","msg":"Discord gateway connected"}
+iris-bot  | {"time":"2026-05-12T04:48:10.335605422Z","level":"INFO","msg":"auto-derived bot ID from session","botID":1503373336879566959}

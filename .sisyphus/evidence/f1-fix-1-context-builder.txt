@@ -1,0 +1,40 @@
+# F1 Fix 1: context_builder.go - Memory/Behavior Blocks Never System Role
+
+## Verification
+- File: internal/orchestrator/context_builder.go lines 178-196
+- Status: VERIFIED - role already set to "user" for memory and behavior blocks
+- Lines 181, 187, 193: all use role="user"
+
+## Test Updates
+- Updated TestContextBuilderBasicMention to verify no system role after index 0
+- Removed duplicate TestContextBuilder_MemoryAndBehaviorNeverSystemRole (already exists in context_builder_memory_test.go)
+
+## Test Results
+```
+=== RUN   TestContextBuilder_MemoryAndBehaviorNeverSystemRole
+--- PASS: TestContextBuilder_MemoryAndBehaviorNeverSystemRole (0.00s)
+=== RUN   TestContextBuilderBasicMention
+--- PASS: TestContextBuilderBasicMention (0.00s)
+=== RUN   TestContextBuilderReplyChain
+--- PASS: TestContextBuilderReplyChain (0.00s)
+=== RUN   TestContextBuilderMinContext
+--- PASS: TestContextBuilderMinContext (0.00s)
+=== RUN   TestContextBuilderTruncation
+--- PASS: TestContextBuilderTruncation (0.00s)
+=== RUN   TestContextBuilderBotMessages
+--- PASS: TestContextBuilderBotMessages (0.00s)
+=== RUN   TestContextBuilderLineFormat
+--- PASS: TestContextBuilderLineFormat (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.010s
+```
+
+## LSP Diagnostics
+No diagnostics found
+
+## Compliance
+✓ Memory blocks use role="user" (line 181)
+✓ Behavior blocks use role="user" (line 187)
+✓ Current message uses role="user" (line 193)
+✓ Only system prompt uses role="system" (line 170)
+✓ Tests verify no system role after index 0

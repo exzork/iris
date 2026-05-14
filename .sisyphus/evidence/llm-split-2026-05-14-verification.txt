@@ -1,0 +1,101 @@
+# LLM Timeout Split - Final Verification (2026-05-14)
+
+## ✓ All Tasks Completed
+
+### A. Config + Env Variables
+✓ internal/config/config.go: Added LLMChatTimeout and LLMToolTimeout fields
+✓ Fallback logic: LLM_CHAT_TIMEOUT → LLM_TIMEOUT → 2m
+✓ Fallback logic: LLM_TOOL_TIMEOUT → LLM_TIMEOUT*4 (rounded) → 10m
+✓ LLMTimeout default changed from 30s to 2m
+✓ Config tests: 4 new tests, all passing
+  - TestLoadConfig_TimeoutDefaults
+  - TestLoadConfig_TimeoutOnlyLLMTimeoutSet
+  - TestLoadConfig_TimeoutChatAndToolSet
+  - TestLoadConfig_TimeoutToolRoundingUp
+
+### B. LLM Client Support
+✓ Two separate clients created in cmd/iris-bot/main.go
+✓ chatClient: timeout = cfg.LLMChatTimeout (2m)
+✓ toolsClient: timeout = cfg.LLMToolTimeout (10m)
+✓ Both share APIKey, BaseURL, Model, MaxRetries, RetryDelay
+✓ Lore LLM clients unaffected (use cfg.LoreLLMTimeout)
+
+### C. Wire Changes
+✓ ToolsLLM adapter → toolsClient
+✓ StreamToolsLLM adapter → toolsClient
+✓ All other adapters → chatClient
+✓ Startup log added: llm_clients_ready with both timeouts
+
+### D. Environment Configuration
+✓ .env backed up to .env.bak.2026-05-14
+✓ .env: LLM_TIMEOUT=2m, LLM_CHAT_TIMEOUT=2m, LLM_TOOL_TIMEOUT=10m
+✓ .env.example: Documented all three vars with fallback behavior
+✓ docker-compose.yml: Forwarded LLM_CHAT_TIMEOUT and LLM_TOOL_TIMEOUT
+
+### E. Verification Results
+
+**Tests**
+✓ go test ./internal/config -count=1: PASS (all tests including 4 new timeout tests)
+✓ go test ./internal/llm -count=1: PASS
+✓ go test ./internal/app/wire -count=1: PASS
+✓ go test ./... -count=1: PASS (all packages)
+
+**Build**
+✓ go build ./...: SUCCESS
+
+**Docker**
+✓ docker compose build --no-cache bot: SUCCESS
+✓ docker compose up -d bot: SUCCESS
+✓ Bot container started and healthy
+
+**Runtime Verification**
+✓ Environment variables in container:
+  - LLM_TIMEOUT=2m
+  - LLM_CHAT_TIMEOUT=2m
+  - LLM_TOOL_TIMEOUT=10m
+
+✓ Startup logs show:
+  - model resolver ready (default, strong, router models)
+  - llm_clients_ready chat_timeout=2m0s tool_timeout=10m0s
+
+### F. Backward Compatibility
+✓ Existing operators using only LLM_TIMEOUT get:
+  - Chat timeout: 2m (up from 30s)
+  - Tool timeout: LLM_TIMEOUT * 4 (rounded up)
+✓ No breaking changes
+✓ New operators can set LLM_CHAT_TIMEOUT and LLM_TOOL_TIMEOUT independently
+
+### G. Documentation
+✓ Findings appended to learnings.md
+✓ Decisions appended to decisions.md
+✓ Evidence files created:
+  - llm-split-2026-05-14-recreate.txt (docker compose output)
+  - llm-split-2026-05-14-env.txt (environment variables)
+  - llm-split-2026-05-14-logs.txt (startup logs)
+  - llm-split-2026-05-14-summary.txt (comprehensive summary)
+  - llm-split-2026-05-14-verification.txt (this file)
+
+## Root Cause Resolution
+
+**Original Problem**
+- Single chatClient with 30s timeout for all LLM calls
+- Tool-call streams hit deadline mid-body
+- Errors: "scanner error: context deadline exceeded"
+
+**Solution**
+- Split into two clients: chatClient (2m) and toolsClient (10m)
+- Tool-call streams now have 10m timeout
+- Chat replies have 2m timeout
+- Eliminates deadline exceeded errors for tool execution
+
+## Files Modified
+1. internal/config/config.go
+2. internal/config/config_test.go
+3. cmd/iris-bot/main.go
+4. .env
+5. .env.example
+6. docker-compose.yml
+
+## Status: COMPLETE ✓
+
+All requirements met. Ready for deployment.

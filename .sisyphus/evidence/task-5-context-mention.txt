@@ -1,0 +1,4 @@
+=== RUN   TestContextBuilderBasicMention
+--- PASS: TestContextBuilderBasicMention (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.003s

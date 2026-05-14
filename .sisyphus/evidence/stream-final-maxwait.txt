@@ -1,0 +1,34 @@
+=== RATE LIMITER MAXWAIT FIX EVIDENCE ===
+
+TEST OUTPUT:
+=== RUN   TestRateLimiter_AllowsWithinWindow
+--- PASS: TestRateLimiter_AllowsWithinWindow (0.00s)
+=== RUN   TestRateLimiter_BlocksOnBurst
+--- PASS: TestRateLimiter_BlocksOnBurst (5.00s)
+=== RUN   TestRateLimiter_PerChannelIndependent
+--- PASS: TestRateLimiter_PerChannelIndependent (0.00s)
+=== RUN   TestRateLimiter_ContextCancellation
+--- PASS: TestRateLimiter_ContextCancellation (0.00s)
+=== RUN   TestRateLimiter_RespectsMaxWait
+--- PASS: TestRateLimiter_RespectsMaxWait (0.10s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	5.110s
+
+VERIFICATION:
+- All 5 RateLimiter tests pass
+- TestRateLimiter_RespectsMaxWait confirms maxWait deadline is respected (~100ms)
+- go build ./... passes
+- go vet ./... passes (only hint about min modernization)
+- All project tests pass (36 packages)
+
+ORPHAN WAIT REMOVAL:
+- Package-level func Wait(ctx, channelID) removed (was lines 33-35)
+- Only method receiver (l *ChannelRateLimiter) Wait exists
+- Verified: grep shows no package-level Wait function
+
+CHANGES:
+- Lines 33-35: Removed orphan package-level Wait function
+- Lines 43-83: Added deadline check and sleep clamping in select loop
+  * Added remaining := time.Until(deadline) check
+  * Return ErrRateLimitExceeded when remaining <= 0
+  * Clamp wait duration to min(sleepDuration, remaining)

@@ -1,0 +1,37 @@
+=== RUN   TestEscalateSchemaShape
+--- PASS: TestEscalateSchemaShape (0.00s)
+=== RUN   TestEscalateRun_ReturnsMarker
+--- PASS: TestEscalateRun_ReturnsMarker (0.00s)
+=== RUN   TestEscalateRun_MissingReason_Errors
+--- PASS: TestEscalateRun_MissingReason_Errors (0.00s)
+=== RUN   TestEscalateRun_EmptyReason_Errors
+--- PASS: TestEscalateRun_EmptyReason_Errors (0.00s)
+=== RUN   TestEscalateRun_WrongType_Errors
+--- PASS: TestEscalateRun_WrongType_Errors (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/tools/escalate	0.003s
+=== RUN   TestContextBuilderBasicMention
+--- PASS: TestContextBuilderBasicMention (0.00s)
+=== RUN   TestContextBuilderReplyChain
+--
+=== RUN   TestHandle_EscalateToolCall_ReRunsWithStrongModel
+2026/05/12 05:22:37 INFO router_decision reason=mention should=true
+2026/05/12 05:22:37 INFO typing_started guild=1 channel=1 reason=pipeline_start
+2026/05/12 05:22:37 INFO llm_request model=unknown
+2026/05/12 05:22:37 INFO llm_escalated reason=complex_reasoning_needed from=unknown to=claude-opus
+2026/05/12 05:22:37 INFO response_chunks n=1
+--
+--- PASS: TestHandle_EscalateToolCall_ReRunsWithStrongModel (0.01s)
+=== RUN   TestHandle_EscalateCappedAtOneRound
+2026/05/12 05:22:37 INFO router_decision reason=mention should=true
+2026/05/12 05:22:37 INFO typing_started guild=1 channel=1 reason=pipeline_start
+2026/05/12 05:22:37 INFO llm_request model=unknown
+2026/05/12 05:22:37 INFO llm_escalated reason=complex_reasoning_needed from=unknown to=claude-opus
+2026/05/12 05:22:37 INFO response_chunks n=1
+--
+--- PASS: TestHandle_EscalateCappedAtOneRound (0.01s)
+=== RUN   TestRateLimiter_AllowsWithinWindow
+--- PASS: TestRateLimiter_AllowsWithinWindow (0.00s)
+=== RUN   TestRateLimiter_BlocksOnBurst
+--- PASS: TestRateLimiter_BlocksOnBurst (5.00s)
+=== RUN   TestRateLimiter_PerChannelIndependent

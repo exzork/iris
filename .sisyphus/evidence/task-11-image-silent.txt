@@ -1,0 +1,4 @@
+=== RUN   TestImageClient_GenerateFailureSilent
+--- PASS: TestImageClient_GenerateFailureSilent (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/llm	0.003s

@@ -1,0 +1,40 @@
+QA Scenario 3: Migration Runner Build and Configuration
+========================================================
+
+Test: Verify migration runner compiles and .env.example updated
+Status: PASS
+
+Evidence:
+---------
+1. Migration runner binary built successfully ✓
+   - Binary: bin/migrate (13.3 MB)
+   - Source: cmd/migrate/main.go
+   - Dependencies: github.com/jackc/pgx/v5 v5.9.2
+
+2. Migration runner features:
+   ✓ Command: migrate up - applies all SQL migrations
+   ✓ Command: migrate status - checks if migrations applied
+   ✓ Reads DATABASE_URL from environment
+   ✓ Reads migrations from ./migrations directory
+   ✓ Executes .sql files in order
+   ✓ Error handling for connection failures
+   ✓ Error handling for file read failures
+
+3. .env.example updated with DB variables:
+   ✓ DISCORD_TOKEN
+   ✓ OPENAI_API_KEY
+   ✓ DATABASE_URL=postgres://iris_user:iris_password@localhost:5432/iris
+   ✓ POSTGRES_HOST=localhost
+   ✓ POSTGRES_PORT=5432
+   ✓ POSTGRES_USER=iris_user
+   ✓ POSTGRES_PASSWORD=iris_password
+   ✓ POSTGRES_DB=iris
+   ✓ EMBEDDING_DIMENSION=1536 (new - for configurable embedding size)
+
+4. go.mod updated:
+   ✓ github.com/jackc/pgx/v5 v5.9.2 added
+   ✓ github.com/jackc/pgpassfile v1.0.0 added
+   ✓ github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 added
+   ✓ golang.org/x/text v0.29.0 added
+
+Conclusion: Migration runner is ready for deployment and .env.example properly documents all DB configuration.

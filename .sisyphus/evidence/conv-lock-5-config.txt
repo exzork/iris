@@ -1,0 +1,40 @@
+## CONV-LOCK T5: Config Implementation Evidence
+
+### Config Field Addition
+File: internal/config/config.go
+- Added ConversationLockTTL time.Duration field to Config struct (line 21)
+- Parsing logic: IRIS_CONV_LOCK_TTL env var accepts Go duration strings (e.g., "5m", "30s", "2m30s")
+- Default: 5 * time.Minute
+- On parse error: falls back to default 5 * time.Minute
+
+### Config Tests (All Passing)
+File: internal/config/config_test.go
+
+Test Results:
+=== RUN   TestConvLockTTL_DefaultWhenUnset
+--- PASS: TestConvLockTTL_DefaultWhenUnset (0.00s)
+=== RUN   TestConvLockTTL_ParsesDuration
+--- PASS: TestConvLockTTL_ParsesDuration (0.00s)
+=== RUN   TestConvLockTTL_InvalidFallsBackToDefault
+--- PASS: TestConvLockTTL_InvalidFallsBackToDefault (0.00s)
+
+Test Coverage:
+1. TestConvLockTTL_DefaultWhenUnset: Verifies 5m default when IRIS_CONV_LOCK_TTL unset
+2. TestConvLockTTL_ParsesDuration: Verifies parsing of "2m30s" duration string
+3. TestConvLockTTL_InvalidFallsBackToDefault: Verifies fallback to 5m on invalid input
+
+### Environment Variable Documentation
+File: .env.example
+Added:
+```
+# Conversation lock TTL: duration for which a conversation remains active after bot reply
+# Accepts Go duration strings (e.g., "5m", "30s", "2m30s")
+# During this window, subsequent messages are checked for relevance to keep conversation alive
+# Default: 5m
+IRIS_CONV_LOCK_TTL=5m
+```
+
+### Build Status
+- go build ./... : PASS
+- go vet ./... : PASS
+- lsp_diagnostics: No errors

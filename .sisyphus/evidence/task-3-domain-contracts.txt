@@ -1,0 +1,40 @@
+=== RUN   TestGuildConfigContract
+--- PASS: TestGuildConfigContract (0.00s)
+=== RUN   TestMemoryRecordContract
+--- PASS: TestMemoryRecordContract (0.00s)
+=== RUN   TestToolRequestValidation
+=== RUN   TestToolRequestValidation/valid_request
+=== RUN   TestToolRequestValidation/missing_ID
+=== RUN   TestToolRequestValidation/missing_tool_name
+--- PASS: TestToolRequestValidation (0.00s)
+    --- PASS: TestToolRequestValidation/valid_request (0.00s)
+    --- PASS: TestToolRequestValidation/missing_ID (0.00s)
+    --- PASS: TestToolRequestValidation/missing_tool_name (0.00s)
+=== RUN   TestToolResultValidation
+=== RUN   TestToolResultValidation/valid_result
+=== RUN   TestToolResultValidation/missing_ID
+--- PASS: TestToolResultValidation (0.00s)
+    --- PASS: TestToolResultValidation/valid_result (0.00s)
+    --- PASS: TestToolResultValidation/missing_ID (0.00s)
+=== RUN   TestLoreCitationContract
+--- PASS: TestLoreCitationContract (0.00s)
+=== RUN   TestDiscordMessageContract
+--- PASS: TestDiscordMessageContract (0.00s)
+=== RUN   TestDiscordEventContract
+--- PASS: TestDiscordEventContract (0.00s)
+=== RUN   TestDiscordClientPortContract
+--- PASS: TestDiscordClientPortContract (0.00s)
+=== RUN   TestLLMClientPortContract
+--- PASS: TestLLMClientPortContract (0.00s)
+=== RUN   TestEmbeddingClientPortContract
+--- PASS: TestEmbeddingClientPortContract (0.00s)
+=== RUN   TestImageClientPortContract
+--- PASS: TestImageClientPortContract (0.00s)
+=== RUN   TestStoragePortContract
+--- PASS: TestStoragePortContract (0.00s)
+=== RUN   TestToolExecutorPortContract
+--- PASS: TestToolExecutorPortContract (0.00s)
+=== RUN   TestRetrievalPortContract
+--- PASS: TestRetrievalPortContract (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/domain	(cached)

@@ -1,0 +1,157 @@
+package memesearch
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/eko/iris-bot/internal/tools"
+)
+
+type Tool struct {
+	DiscordIndex DiscordMediaIndex
+	Social       []SocialAdapter
+	Safety       SafetyClassifier
+}
+
+func New(idx DiscordMediaIndex, social []SocialAdapter, safety SafetyClassifier) *Tool {
+	return &Tool{
+		DiscordIndex: idx,
+		Social:       social,
+		Safety:       safety,
+	}
+}
+
+func (t *Tool) Schema() *tools.Schema {
+	return &tools.Schema{
+		Name:        "meme_search",
+		Description: "Search for a meme GIF/image from Discord history and social sources.",
+		Fields: []tools.FieldSpec{
+			{
+				Name:        "query",
+				Kind:        tools.KindString,
+				Required:    true,
+				Description: "keywords",
+			},
+			{
+				Name:        "guild_id",
+				Kind:        tools.KindNumber,
+				Required:    true,
+				Description: "Discord guild id for Discord history search",
+			},
+			{
+				Name:        "limit",
+				Kind:        tools.KindNumber,
+				Required:    false,
+				Description: "max results",
+			},
+		},
+	}
+}
+
+func (t *Tool) Run(ctx context.Context, args map[string]interface{}) (string, error) {
+	query, ok := args["query"].(string)
+	if !ok {
+		return "", fmt.Errorf("query must be a string")
+	}
+
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return "", fmt.Errorf("query is required")
+	}
+
+	guildIDVal, ok := args["guild_id"]
+	if !ok {
+		return "", fmt.Errorf("guild_id is required")
+	}
+
+	var guildID int64
+	switch v := guildIDVal.(type) {
+	case float64:
+		guildID = int64(v)
+	case int:
+		guildID = int64(v)
+	case int64:
+		guildID = v
+	default:
+		return "", fmt.Errorf("guild_id must be a number")
+	}
+
+	limit := 3
+	if limitVal, ok := args["limit"]; ok {
+		switch v := limitVal.(type) {
+		case float64:
+			limit = int(v)
+		case int:
+			limit = v
+		}
+	}
+
+	if limit < 1 {
+		limit = 3
+	}
+
+	results := make([]MediaItem, 0)
+
+	discordResults, err := t.DiscordIndex.Search(ctx, guildID, query, limit)
+	if err == nil && len(discordResults) > 0 {
+		for _, item := range discordResults {
+			classified := t.Safety.Classify(item)
+			if classified == SafetySafe {
+				results = append(results, MediaItem{
+					URL:      item.URL,
+					Source:   item.Source,
+					MimeType: item.MimeType,
+					Caption:  item.Caption,
+					Safety:   classified,
+				})
+			}
+		}
+	}
+
+	if len(results) == 0 {
+		for _, adapter := range t.Social {
+			socialResults, err := adapter.Search(ctx, query, limit)
+			if err != nil {
+				continue
+			}
+
+			for _, item := range socialResults {
+				classified := t.Safety.Classify(item)
+				if classified == SafetySafe {
+					results = append(results, MediaItem{
+						URL:      item.URL,
+						Source:   adapter.Source(),
+						MimeType: item.MimeType,
+						Caption:  item.Caption,
+						Safety:   classified,
+					})
+				}
+
+				if len(results) >= limit {
+					break
+				}
+			}
+
+			if len(results) >= limit {
+				break
+			}
+		}
+	}
+
+	output := map[string]interface{}{
+		"results": results,
+	}
+
+	if len(results) == 0 {
+		output["note"] = "Tidak ditemukan meme yang cocok dan aman."
+	}
+
+	jsonBytes, err := json.Marshal(output)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal results: %w", err)
+	}
+
+	return string(jsonBytes), nil
+}

@@ -1,0 +1,39 @@
+DEPLOY SUMMARY - 2026-05-13T15:39:24Z
+=====================================
+
+BUILD STATUS: ✓ SUCCESS
+- docker compose build bot completed successfully
+- Image hash: 69cd5346408b
+- Build output: .sisyphus/evidence/deploy-2026-05-13-build.txt
+
+CONTAINER RECREATION: ✓ SUCCESS
+- docker compose up -d --force-recreate bot completed
+- Container ID: 6008502f0c5f
+- Status: Up 42 seconds
+- Recreate output: .sisyphus/evidence/deploy-2026-05-13-recreate.txt
+
+STARTUP VERIFICATION: ✓ SUCCESS
+- mcp supervisor ready: YES (path=/app/config/mcps.json, owner_id=291231194723647499)
+- lore_worker status: DISABLED (IRIS_LORE_THREADS_ENABLED not set in .env)
+- Discord connection: OK (no panic/FATAL in logs)
+- Migrations: Applied (009, 010, 011 confirmed in migrate logs)
+- Full logs: .sisyphus/evidence/deploy-2026-05-13-logs-full.txt
+
+ALLOW-LIST VERIFICATION: ✓ SUCCESS
+- Guild: 761163966030151701
+- Channel: 1504020311496986715
+- Status: Row re-inserted (was missing, now present)
+- Query output: .sisyphus/evidence/deploy-2026-05-13-allowlist-verify.txt
+
+MCP SERVERS: 
+- twitter MCP: Running (expected timeout during ListTools is non-blocking)
+- All other MCPs: Ready
+
+CONFIGURATION:
+- IRIS_LORE_THREADS_ENABLED: Not set (default disabled - respecting operator config)
+- LLM_MODEL: kr/claude-sonnet-4.5
+- LLM_MODEL_STRONG: kr/claude-opus-4.7
+- Database: Connected and healthy
+- SearXNG: Connected and healthy
+
+CONCLUSION: Deploy successful. Bot is running, migrations applied, allow-list restored.

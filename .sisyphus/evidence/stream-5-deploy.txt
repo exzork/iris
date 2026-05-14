@@ -1,0 +1,66 @@
+# Stream Tier Typing - T5 Deployment Evidence
+
+## Build Status
+
+```
+Binary: /tmp/iris-bot-test
+Size: 17M
+Type: ELF 64-bit LSB executable, x86-64, statically linked
+Status: ✓ Build successful
+```
+
+## Test Results Summary
+
+```
+go test -p 2 -count=1 ./internal/orchestrator/...
+Result: ok  	github.com/eko/iris-bot/internal/orchestrator	14.967s
+```
+
+### Rate Limiter Tests (All Pass)
+- TestRateLimiter_AllowsWithinWindow: ✓
+- TestRateLimiter_BlocksOnBurst: ✓ (5s delay verified)
+- TestRateLimiter_PerChannelIndependent: ✓
+- TestRateLimiter_ContextCancellation: ✓
+
+### Streaming Sender Tests (All Pass)
+- TestStreamingSender_EmitsOnParagraphBoundary: ✓
+- TestStreamingSender_FlushesRemainder: ✓
+- TestStreamingSender_RespectsRateLimit: ✓
+- TestStreamingSender_HandlesLongParagraphSplits: ✓
+- TestStreamingSender_ClosedDropsSilently: ✓
+
+### Integration Tests (All Pass)
+- TestHandle_StreamingPath_SendsPerParagraph: ✓
+- TestHandle_StreamingPath_FallsBackWhenDisabled: ✓
+- TestStreamingSender_MultipleChannels: ✓
+
+## Configuration
+
+- IRIS_STREAMING env var: defaults to true (set to "false" or "0" to disable)
+- Rate limiter: 5 sends per 5 seconds per channel
+- Paragraph boundary: \n\n in buffer AND buffer >= 200 bytes
+- Soft threshold: 1600 bytes (uses SplitMessage for chunks <= 2000)
+
+## Files Changed
+
+1. internal/orchestrator/stream_sender.go (NEW)
+2. internal/orchestrator/stream_sender_test.go (NEW)
+3. internal/orchestrator/rate_limiter.go (NEW)
+4. internal/orchestrator/rate_limiter_test.go (NEW)
+5. internal/orchestrator/orchestrator_streaming_test.go (NEW)
+6. internal/orchestrator/orchestrator.go (MODIFIED)
+7. internal/app/wire/adapters.go (MODIFIED)
+8. internal/config/config.go (MODIFIED)
+9. cmd/iris-bot/main.go (MODIFIED)
+
+## Verification Checklist
+
+- [x] go build ./... passes
+- [x] go vet ./... passes
+- [x] All orchestrator tests pass (14.967s)
+- [x] Rate limiter enforces 5 sends/5s per channel
+- [x] Streaming sender emits at paragraph boundaries
+- [x] Long messages split correctly (< 2000 chars)
+- [x] Per-channel rate limiting is independent
+- [x] Streaming can be disabled via IRIS_STREAMING=false
+- [x] Non-streaming path preserved for rollback

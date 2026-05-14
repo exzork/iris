@@ -1,0 +1,2 @@
+NAME       IMAGE      COMMAND                  SERVICE   CREATED          STATUS          PORTS
+iris-bot   iris-bot   "/usr/local/bin/iris…"   bot       32 seconds ago   Up 29 seconds   

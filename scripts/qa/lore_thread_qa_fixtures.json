@@ -1,0 +1,26 @@
+{
+  "lore_messages": [
+    {
+      "id": "lore_msg_1",
+      "content": "Apakah Rover adalah karakter utama dalam Wuthering Waves? Saya ingin tahu lebih banyak tentang latar belakang mereka."
+    },
+    {
+      "id": "lore_msg_2",
+      "content": "Menurut wiki, Rover memiliki kemampuan unik yang berkaitan dengan Tacet Discord. Ini sangat menarik untuk dipelajari lebih lanjut."
+    }
+  ],
+  "non_lore_message": {
+    "id": "non_lore_msg_1",
+    "content": "Siapa yang ingin bermain game bersama malam ini? Ayo kita buat grup!"
+  },
+  "expected_summary_keywords": [
+    "Rover",
+    "Wuthering Waves",
+    "karakter",
+    "lore"
+  ],
+  "non_lore_keywords": [
+    "bermain game",
+    "grup"
+  ]
+}

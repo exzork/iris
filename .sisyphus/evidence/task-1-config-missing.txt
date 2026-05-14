@@ -1,0 +1,3 @@
+config error: missing required env var: DISCORD_TOKEN
+exit status 1
+Exit code: 1

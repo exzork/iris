@@ -1,0 +1,6 @@
+=== RUN   TestServerMemoryStartup_DisabledBypass
+--- PASS: TestServerMemoryStartup_DisabledBypass (0.00s)
+=== RUN   TestMemoryRuntimeConfig_DisabledSkipsWorkerAndRecallWiring
+--- PASS: TestMemoryRuntimeConfig_DisabledSkipsWorkerAndRecallWiring (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/memory	0.006s

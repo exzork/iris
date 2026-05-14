@@ -1,0 +1,54 @@
+QA Scenario 2: Migration Schema Validation
+===========================================
+
+Test: Verify 001_init.sql contains all required tables with proper structure
+Status: PASS
+
+Evidence:
+---------
+1. pgvector extension enabled ✓
+   - CREATE EXTENSION IF NOT EXISTS vector;
+
+2. Required tables created:
+   ✓ guilds - base table for multi-guild scoping
+   ✓ guild_settings - per-guild configuration
+   ✓ exception_channels - channels where bot should not respond
+   ✓ memory_records - hybrid memory with vector embeddings
+   ✓ lore_documents - knowledge base documents
+   ✓ lore_chunks - vector-indexed chunks of lore documents
+   ✓ tool_logs - audit trail for tool executions
+   ✓ reminders - scheduled reminders per guild
+   ✓ audit_events - comprehensive audit trail
+
+3. Multi-guild scoping verification:
+   ✓ guilds table: id BIGINT PRIMARY KEY
+   ✓ guild_settings: guild_id BIGINT NOT NULL REFERENCES guilds(id)
+   ✓ exception_channels: guild_id BIGINT NOT NULL REFERENCES guilds(id)
+   ✓ memory_records: guild_id BIGINT NOT NULL REFERENCES guilds(id)
+   ✓ lore_documents: guild_id BIGINT NOT NULL REFERENCES guilds(id)
+   ✓ lore_chunks: guild_id BIGINT NOT NULL REFERENCES guilds(id)
+   ✓ tool_logs: guild_id BIGINT NOT NULL REFERENCES guilds(id)
+   ✓ reminders: guild_id BIGINT NOT NULL REFERENCES guilds(id)
+   ✓ audit_events: guild_id BIGINT NOT NULL REFERENCES guilds(id)
+
+4. Vector columns for embeddings:
+   ✓ memory_records: embedding vector(1536)
+   ✓ lore_chunks: embedding vector(1536)
+
+5. Vector indexes for similarity search:
+   ✓ idx_memory_embedding ON memory_records USING ivfflat
+   ✓ idx_lore_embedding ON lore_chunks USING ivfflat
+
+6. Additional indexes for performance:
+   ✓ idx_guild_memory, idx_user_memory on memory_records
+   ✓ idx_guild_lore on lore_documents
+   ✓ idx_guild_chunks, idx_document_chunks on lore_chunks
+   ✓ idx_guild_tools, idx_tool_name on tool_logs
+   ✓ idx_guild_reminders, idx_scheduled on reminders
+   ✓ idx_guild_audit, idx_event_type, idx_created_at on audit_events
+
+7. Referential integrity:
+   ✓ All foreign keys use ON DELETE CASCADE
+   ✓ Unique constraints on guild_id + key combinations
+
+Conclusion: Migration schema properly implements multi-guild scoping with pgvector support.

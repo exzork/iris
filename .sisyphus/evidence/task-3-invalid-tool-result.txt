@@ -1,0 +1,8 @@
+=== RUN   TestToolResultValidation
+=== RUN   TestToolResultValidation/valid_result
+=== RUN   TestToolResultValidation/missing_ID
+--- PASS: TestToolResultValidation (0.00s)
+    --- PASS: TestToolResultValidation/valid_result (0.00s)
+    --- PASS: TestToolResultValidation/missing_ID (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/domain	0.002s

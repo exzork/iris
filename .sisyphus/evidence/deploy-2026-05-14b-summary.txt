@@ -1,0 +1,35 @@
+DEPLOY SUMMARY: 2026-05-14T04:19:00Z
+=====================================
+
+TIMESTAMP: 2026-05-14T04:19:00Z
+IMAGE HASH: sha256:7004ba61891c3b11835d214a1eb50fcbf0c1e90fa35325054171b5eddd69d81a
+CONTAINER ID: iris-bot (recreated, status: Up 3+ seconds)
+
+BUILD STATUS: ✓ PASSED
+- docker compose build bot completed successfully
+- Image: iris-bot:latest
+
+CONTAINER STATUS: ✓ PASSED
+- docker compose up -d --force-recreate bot completed
+- Container status: Up (verified via docker compose ps)
+
+STARTUP LOGS: ✓ PASSED
+- llm_clients_ready: chat_timeout=2m0s tool_timeout=10m0s ✓
+- mcp supervisor ready: path=/app/config/mcps.json owner_id=291231194723647499 ✓
+- lore_worker_started: poll_interval=30s llm_timeout=0s ✓
+- No panic or FATAL errors detected ✓
+
+ENVIRONMENT CHECK: ✓ PASSED
+- LLM_TIMEOUT=2m ✓
+- IRIS_LORE_THREADS_ENABLED=true ✓
+- IRIS_LORE_LLM_MODEL=kr/claude-opus-4.7 ✓
+- IRIS_LORE_WORKER_POLL_INTERVAL=30s ✓
+- IRIS_LORE_LLM_TIMEOUT=0 ✓
+
+ALLOW-LIST CHECK: ✓ PASSED
+- guild_id=761163966030151701, channel_id=1504020311496986715 present (1 row)
+
+GUILD LORE SETTINGS: ✓ PASSED
+- guild_id=761163966030151701, enabled=t (inserted/verified)
+
+DEPLOYMENT COMPLETE: ALL CHECKS PASSED

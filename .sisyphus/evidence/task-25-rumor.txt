@@ -1,0 +1,29 @@
+Task 25: Patch Note and News Summarizer - Rumor Source Evidence
+
+Scenario: rumor source caveated
+Tool: Go test
+Preconditions: fake search returns only forum rumor
+Steps: 1. Run TestSummarizeRumorsOnlyAddsCaveat 2. Inspect response
+Expected Result: response labels it unverified and does not state as official
+
+Test Output:
+=== RUN   TestSummarizeRumorsOnlyAddsCaveat
+--- PASS: TestSummarizeRumorsOnlyAddsCaveat (0.00s)
+
+Test Details:
+- Query: "patch 1.4 leak"
+- Search Results: 2 results (all community sources)
+  * Reddit: https://reddit.com/r/WutheringWaves/leak (Label: "Komunitas")
+  * X/Twitter: https://x.com/user/patch-speculation (Label: "Komunitas")
+- RAG Results: None
+- Output Bullets: 2 bullets, all labeled "Komunitas"
+- Note: "Belum ada sumber resmi atau wiki yang terindeks. Informasi di bawah adalah rumor komunitas dan belum diverifikasi."
+
+Verification:
+✓ All bullets labeled as "Komunitas" (Community)
+✓ Indonesian caveat note added when all sources are community-only
+✓ Caveat clearly states information is unverified rumor
+✓ Does NOT present rumors as official patch notes
+✓ Caveat text: "Belum ada sumber resmi atau wiki yang terindeks. Informasi di bawah adalah rumor komunitas dan belum diverifikasi."
+
+Result: PASS - Rumor-only sources are properly caveated with Indonesian disclaimer, preventing misrepresentation as official.

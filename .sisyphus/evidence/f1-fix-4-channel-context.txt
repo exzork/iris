@@ -1,0 +1,73 @@
+# F1 Fix 4: channel_context.go - No Pruning in Upsert
+
+## Verification
+- File: internal/repository/channel_context.go lines 108-149
+- Status: VERIFIED - no DELETE OFFSET 20 block in Upsert method
+- Upsert only performs INSERT ON CONFLICT DO UPDATE
+- No pruning logic present
+- PruneOldest is a separate method (lines 151-167) not called from Upsert
+
+## Code Review (Upsert method)
+```go
+func (r *ChannelMessageRepo) Upsert(ctx context.Context, msg *domain.ChannelMessage) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var embeddingVal interface{}
+	if len(msg.ContentEmbedding) > 0 {
+		embeddingVal = pgvector.NewVector(msg.ContentEmbedding)
+	}
+
+	sql := `
+		INSERT INTO channel_messages (
+			guild_id, channel_id, message_id, user_id, author_name, content,
+			attachment_count, reply_to_message_id, reply_to_channel_id, is_bot,
+			trigger_source, created_at, edited_at, deleted_at, content_embedding
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		ON CONFLICT (guild_id, message_id) DO UPDATE SET
+			content = EXCLUDED.content,
+			edited_at = EXCLUDED.edited_at,
+			deleted_at = EXCLUDED.deleted_at,
+			content_embedding = EXCLUDED.content_embedding
+	`
+
+	_, err = tx.Exec(ctx, sql, ...)
+	if err != nil {
+		return fmt.Errorf("failed to upsert message: %w", err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+```
+
+## Test Results
+```
+=== RUN   TestChannelMessage_UpsertDoesNotPruneMessages
+--- PASS: TestChannelMessage_UpsertDoesNotPruneMessages (0.15s)
+=== RUN   TestChannelMessageRepo_UpsertDoesNotPrune
+--- PASS: TestChannelMessageRepo_UpsertDoesNotPrune (0.13s)
+PASS
+ok  	github.com/eko/iris-bot/internal/repository	0.287s
+```
+
+## Test Details
+- TestChannelMessage_UpsertDoesNotPruneMessages: inserts 30 messages, verifies all 30 remain
+- TestChannelMessageRepo_UpsertDoesNotPrune: inserts 25 messages, verifies all 25 remain with correct IDs
+
+## LSP Diagnostics
+No diagnostics found
+
+## Compliance
+✓ No DELETE OFFSET 20 in Upsert
+✓ No pruning logic in Upsert
+✓ PruneOldest is separate method, not called from Upsert
+✓ Tests verify indefinite retention (25+ messages preserved)
+✓ All message IDs verified present after Upsert

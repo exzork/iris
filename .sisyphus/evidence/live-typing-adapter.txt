@@ -1,0 +1,26 @@
+=== TYPING ADAPTER FIX EVIDENCE ===
+
+TEST OUTPUT:
+=== RUN   TestDiscordSenderAdapter_SatisfiesTypingSender
+--- PASS: TestDiscordSenderAdapter_SatisfiesTypingSender (0.00s)
+
+SENDTYPING METHOD ADDED TO DISCORDSENDERADAPTER:
+File: internal/app/wire/adapters.go (lines 178-182)
+
+func (a *DiscordSenderAdapter) SendMessage(ctx context.Context, guildID, channelID int64, content string) error {
+	return a.Gateway.SendMessage(ctx, guildID, channelID, content)
+}
+
+func (a *DiscordSenderAdapter) SendTyping(ctx context.Context, guildID, channelID int64) error {
+	return a.Gateway.SendTyping(ctx, guildID, channelID)
+}
+
+INTERFACE COMPLIANCE:
+- DiscordSenderAdapter now satisfies orchestrator.TypingSender interface
+- Compile-time check: var _ orchestrator.TypingSender = (*DiscordSenderAdapter)(nil)
+- Method delegates to underlying discord.GatewayAdapter.SendTyping
+
+ROOT CAUSE FIXED:
+- Previously: orchestrator.startTyping() type assertion failed silently
+- Now: ts, ok := o.cfg.Discord.(TypingSender) succeeds
+- Typing indicator now fires correctly on pipeline_start

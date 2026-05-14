@@ -1,0 +1,24 @@
+=== RUN   TestHandle_StreamingPath_SendsPerParagraph
+--- PASS: TestHandle_StreamingPath_SendsPerParagraph (0.00s)
+=== RUN   TestHandle_StreamingPath_FallsBackWhenDisabled
+--- PASS: TestHandle_StreamingPath_FallsBackWhenDisabled (0.00s)
+=== RUN   TestStreamingSender_MultipleChannels
+--- PASS: TestStreamingSender_MultipleChannels (0.00s)
+=== RUN   TestRateLimiter_AllowsWithinWindow
+--- PASS: TestRateLimiter_AllowsWithinWindow (0.00s)
+=== RUN   TestRateLimiter_BlocksOnBurst
+--- PASS: TestRateLimiter_BlocksOnBurst (5.00s)
+=== RUN   TestRateLimiter_PerChannelIndependent
+--- PASS: TestRateLimiter_PerChannelIndependent (0.00s)
+=== RUN   TestRateLimiter_ContextCancellation
+--- PASS: TestRateLimiter_ContextCancellation (0.00s)
+=== RUN   TestStreamingSender_EmitsOnParagraphBoundary
+--- PASS: TestStreamingSender_EmitsOnParagraphBoundary (0.00s)
+=== RUN   TestStreamingSender_FlushesRemainder
+--- PASS: TestStreamingSender_FlushesRemainder (0.00s)
+=== RUN   TestStreamingSender_RespectsRateLimit
+--- PASS: TestStreamingSender_RespectsRateLimit (0.00s)
+=== RUN   TestStreamingSender_HandlesLongParagraphSplits
+--- PASS: TestStreamingSender_HandlesLongParagraphSplits (0.00s)
+=== RUN   TestStreamingSender_ClosedDropsSilently
+--- PASS: TestStreamingSender_ClosedDropsSilently (0.00s)

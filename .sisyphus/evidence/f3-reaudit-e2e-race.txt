@@ -1,0 +1,2 @@
+ok  	github.com/eko/iris-bot/internal/lorethread	1.009s
+ok  	github.com/eko/iris-bot/internal/orchestrator	4.146s

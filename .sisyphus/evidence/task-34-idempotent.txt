@@ -1,0 +1,4 @@
+=== RUN   TestSeedIdempotent
+--- PASS: TestSeedIdempotent (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/bootstrap	0.004s

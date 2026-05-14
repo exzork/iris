@@ -1,0 +1,4 @@
+=== RUN   TestDecideFallbackModeEmptyAllowList
+--- PASS: TestDecideFallbackModeEmptyAllowList (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/router	0.007s

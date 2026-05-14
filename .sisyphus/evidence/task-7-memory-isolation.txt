@@ -1,0 +1,10 @@
+=== RUN   TestMemoryRepo
+=== RUN   TestMemoryRepo/Save_and_GetByGuild
+=== RUN   TestMemoryRepo/SearchSimilar
+=== RUN   TestMemoryRepo/Guild_scoping
+--- PASS: TestMemoryRepo (0.91s)
+    --- PASS: TestMemoryRepo/Save_and_GetByGuild (0.01s)
+    --- PASS: TestMemoryRepo/SearchSimilar (0.00s)
+    --- PASS: TestMemoryRepo/Guild_scoping (0.83s)
+PASS
+ok  	github.com/eko/iris-bot/internal/repository	0.920s

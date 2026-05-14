@@ -1,0 +1,28 @@
+F1 COMPLIANCE FIX #2: Remove Synchronous Embed from Capture Hot Path
+=====================================================================
+
+VERIFICATION COMPLETED: 2026-05-12T10:46:39Z
+
+CODE REVIEW:
+- File: internal/app/wire/adapters.go
+- Lines 206-209: ChannelCaptureAdapter struct has NO Embedder field
+- Lines 211-226: Capture method calls only a.Repo.Upsert(ctx, msg) with msg.ContentEmbedding == nil
+- File: cmd/iris-bot/main.go
+- Lines 221-224: ChannelCaptureAdapter struct literal does NOT reference Embedder field
+- Confirmed: No synchronous embedding in capture hot path
+
+TEST RESULTS:
+✓ TestChannelCaptureAdapter_DoesNotEmbedSynchronously - PASS
+  - Verifies embedder is not called during capture
+  - Verifies message embedding remains nil
+  - Async worker handles embedding later
+
+LSP DIAGNOSTICS:
+✓ internal/app/wire/adapters.go - No errors (hints only)
+✓ internal/app/wire/adapters_test.go - No errors (hints only)
+
+COMPLIANCE STATUS: PASS
+- Embedder field removed from ChannelCaptureAdapter ✓
+- Capture method does not call embedder ✓
+- Async worker backfills embeddings ✓
+- Test proves non-blocking behavior ✓

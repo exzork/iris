@@ -1,0 +1,32 @@
+QA Scenario 1: Docker Compose Configuration Validation
+========================================================
+
+Test: Verify docker-compose.yml structure and configuration
+Status: PASS
+
+Evidence:
+---------
+1. File exists: docker-compose.yml ✓
+2. Service configuration:
+   - Image: pgvector/pgvector:pg16 ✓
+   - Container name: iris-postgres ✓
+   - Port mapping: 5432:5432 ✓
+   - Health check configured ✓
+   - Network: iris-network ✓
+   - Volume: postgres_data ✓
+
+3. Environment variables (from .env):
+   - POSTGRES_USER: ${POSTGRES_USER:-iris_user} ✓
+   - POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iris_password} ✓
+   - POSTGRES_DB: ${POSTGRES_DB:-iris} ✓
+
+4. Health check configuration:
+   - Test: pg_isready command ✓
+   - Interval: 10s ✓
+   - Timeout: 5s ✓
+   - Retries: 5 ✓
+   - Start period: 10s ✓
+
+5. No hardcoded secrets in docker-compose.yml ✓
+
+Conclusion: docker-compose.yml is properly configured for postgres:16 with pgvector extension.

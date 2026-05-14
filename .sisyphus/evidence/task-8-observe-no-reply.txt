@@ -1,0 +1,8 @@
+=== RUN   TestOrchestrator_CaptureAllGuildMessages
+2026/05/12 09:33:14 INFO router_decision reason=no_trigger should=false
+--- PASS: TestOrchestrator_CaptureAllGuildMessages (0.50s)
+=== RUN   TestOrchestrator_NonTriggeringMessageCapturedButNoReply
+2026/05/12 09:33:14 INFO router_decision reason=no_trigger should=false
+--- PASS: TestOrchestrator_NonTriggeringMessageCapturedButNoReply (0.50s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	1.008s

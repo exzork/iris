@@ -1,0 +1,42 @@
+Task 24: Ambiguous Item Lookup Test Evidence
+==============================================
+
+Test: TestToolRunAmbiguous
+Status: PASS
+
+Scenario: ambiguous item asks clarification
+Tool: item_lookup
+Preconditions: two fixture items share alias "Sword"
+Steps: 1. Run lookup by ambiguous alias "Sword" 2. Inspect response
+
+Expected Result: bot asks Indonesian clarification with candidate list
+
+Actual Result:
+{
+  "status": "ambiguous",
+  "items": [
+    {
+      "category": "weapon",
+      "name": "Sword A",
+      "page_url": "http://example.com/sword-a",
+      "rarity": "5-star",
+      "summary": "First sword"
+    },
+    {
+      "category": "weapon",
+      "name": "Sword B",
+      "page_url": "http://example.com/sword-b",
+      "rarity": "4-star",
+      "summary": "Second sword"
+    }
+  ],
+  "message": "Item \"Sword\" ditemukan di beberapa kategori. Pilih salah satu:\n• Sword A (weapon)\n• Sword B (weapon)"
+}
+
+Verification:
+✓ status = "ambiguous"
+✓ items length = 2 (both candidates returned)
+✓ message in Indonesian: "ditemukan di beberapa kategori" (found in multiple categories)
+✓ message asks clarification: "Pilih salah satu:" (Choose one:)
+✓ candidate list with bullet points showing name and category
+✓ all item details preserved in response

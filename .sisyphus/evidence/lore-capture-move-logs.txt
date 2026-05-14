@@ -1,0 +1,4 @@
+iris-bot  | {"time":"2026-05-14T07:31:39.262194915Z","level":"INFO","msg":"lore_worker_started","poll_interval":"30s","llm_timeout":"0s"}
+iris-bot  | {"time":"2026-05-14T07:31:39.262255986Z","level":"INFO","msg":"lore_finalize_now tool registered"}
+iris-bot  | time=2026-05-14T07:31:39.262Z level=INFO msg=lore_capture_armed
+iris-bot  | {"time":"2026-05-14T07:31:39.262707029Z","level":"INFO","msg":"all tools registered","count":12,"names":["mcp_add","mcp_remove","mcp_unbind_slash","mcp_list_slash","iris_set_model","iris_reset_model","iris_get_models","escalate_to_strong_model","web_search","mcp_list","lore_finalize_now","mcp_bind_slash"]}

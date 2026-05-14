@@ -1,0 +1,4 @@
+=== RUN   TestPipelineInjectionNeutralized
+--- PASS: TestPipelineInjectionNeutralized (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/safety	0.003s

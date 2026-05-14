@@ -1,0 +1,2 @@
+config ok
+Exit code: 0

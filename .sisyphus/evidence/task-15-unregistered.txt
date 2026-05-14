@@ -1,0 +1,4 @@
+=== RUN   TestValidateAccessUnregistered
+--- PASS: TestValidateAccessUnregistered (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/lore/source	0.002s

@@ -1,0 +1,59 @@
+                                             Table "public.channel_messages"
+       Column        |            Type             | Collation | Nullable |                   Default                    
+---------------------+-----------------------------+-----------+----------+----------------------------------------------
+ id                  | bigint                      |           | not null | nextval('channel_messages_id_seq'::regclass)
+ guild_id            | bigint                      |           | not null | 
+ channel_id          | bigint                      |           | not null | 
+ message_id          | bigint                      |           | not null | 
+ user_id             | bigint                      |           | not null | 
+ author_name         | character varying(255)      |           |          | 
+ content             | text                        |           | not null | ''::text
+ attachment_count    | integer                     |           | not null | 0
+ reply_to_message_id | bigint                      |           |          | 
+ reply_to_channel_id | bigint                      |           |          | 
+ is_bot              | boolean                     |           | not null | false
+ trigger_source      | character varying(64)       |           | not null | 'observe'::character varying
+ created_at          | timestamp without time zone |           | not null | CURRENT_TIMESTAMP
+ edited_at           | timestamp without time zone |           |          | 
+ deleted_at          | timestamp without time zone |           |          | 
+ content_embedding   | vector(384)                 |           |          | 
+Indexes:
+    "channel_messages_pkey" PRIMARY KEY, btree (id)
+    "channel_messages_guild_id_message_id_key" UNIQUE CONSTRAINT, btree (guild_id, message_id)
+    "idx_channel_messages_recent" btree (guild_id, channel_id, created_at DESC)
+    "idx_channel_messages_reply" btree (guild_id, reply_to_message_id)
+    "idx_channel_messages_user" btree (guild_id, user_id, created_at DESC)
+Foreign-key constraints:
+    "channel_messages_guild_id_fkey" FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
+
+                                            Table "public.channel_conversations"
+      Column       |            Type             | Collation | Nullable |                      Default                      
+-------------------+-----------------------------+-----------+----------+---------------------------------------------------
+ id                | bigint                      |           | not null | nextval('channel_conversations_id_seq'::regclass)
+ guild_id          | bigint                      |           | not null | 
+ channel_id        | bigint                      |           | not null | 
+ last_bot_reply_at | timestamp without time zone |           | not null | 
+ lock_until        | timestamp without time zone |           | not null | 
+ updated_at        | timestamp without time zone |           | not null | CURRENT_TIMESTAMP
+Indexes:
+    "channel_conversations_pkey" PRIMARY KEY, btree (id)
+    "channel_conversations_guild_id_channel_id_key" UNIQUE CONSTRAINT, btree (guild_id, channel_id)
+    "idx_channel_conversations_lock" btree (guild_id, channel_id, lock_until)
+Foreign-key constraints:
+    "channel_conversations_guild_id_fkey" FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
+
+                                        Table "public.allowed_channels"
+   Column   |            Type             | Collation | Nullable |                   Default                    
+------------+-----------------------------+-----------+----------+----------------------------------------------
+ id         | integer                     |           | not null | nextval('allowed_channels_id_seq'::regclass)
+ guild_id   | bigint                      |           | not null | 
+ channel_id | bigint                      |           | not null | 
+ reason     | character varying(255)      |           |          | 
+ created_at | timestamp without time zone |           |          | CURRENT_TIMESTAMP
+Indexes:
+    "allowed_channels_pkey" PRIMARY KEY, btree (id)
+    "allowed_channels_guild_id_channel_id_key" UNIQUE CONSTRAINT, btree (guild_id, channel_id)
+    "idx_allowed_channels_guild" btree (guild_id)
+Foreign-key constraints:
+    "allowed_channels_guild_id_fkey" FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
+

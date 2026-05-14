@@ -1,0 +1,38 @@
+# Stream Sender Paragraph Boundary Evidence
+
+## Test Results
+
+All streaming sender tests pass, confirming paragraph boundary detection and flushing:
+
+```
+=== RUN   TestStreamingSender_EmitsOnParagraphBoundary
+--- PASS: TestStreamingSender_EmitsOnParagraphBoundary (0.00s)
+
+=== RUN   TestStreamingSender_FlushesRemainder
+--- PASS: TestStreamingSender_FlushesRemainder (0.00s)
+
+=== RUN   TestStreamingSender_RespectsRateLimit
+--- PASS: TestStreamingSender_RespectsRateLimit (0.00s)
+
+=== RUN   TestStreamingSender_HandlesLongParagraphSplits
+--- PASS: TestStreamingSender_HandlesLongParagraphSplits (0.00s)
+
+=== RUN   TestStreamingSender_ClosedDropsSilently
+--- PASS: TestStreamingSender_ClosedDropsSilently (0.00s)
+```
+
+## Implementation Details
+
+- Paragraph boundary detection: `\n\n` in buffer AND buffer >= 200 bytes triggers flush
+- Soft threshold: buffer >= 1600 bytes triggers SplitMessage with 1600 char limit
+- Final flush: Flush() emits all remaining content via SplitMessage
+- Per-instance serialization via mutex
+- Idempotent Flush() after close
+
+## Behavior Verified
+
+1. Emits at paragraph boundaries when buffer exceeds 200 bytes
+2. Flushes remainder on explicit Flush() call
+3. Respects rate limits via ChannelRateLimiter
+4. Handles long paragraphs > 2000 chars via SplitMessage
+5. Silently drops pushes after close

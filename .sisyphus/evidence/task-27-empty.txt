@@ -1,0 +1,18 @@
+=== Task 27: Conversation Summarizer - Empty History Test Evidence ===
+
+Test: TestSummarizeEmptyReturnsIndonesianMessage
+Status: PASS
+
+Description:
+- Empty message history (no messages in channel)
+- Summarizer.Summarize() called with empty history
+- Verifies Summary contains:
+  * Empty=true flag set
+  * Text="Belum ada riwayat pesan yang dapat diringkas untuk channel ini." (Indonesian message)
+  * LLM.Summarize() NOT called (no unnecessary LLM invocation)
+
+Key Assertion:
+- Empty history returns Indonesian localized message
+- LLM is not invoked for empty histories (efficiency)
+
+Result: PASS - Empty histories handled gracefully with Indonesian message

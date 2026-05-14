@@ -1,0 +1,52 @@
+=== RUN   TestGuildRepo
+=== RUN   TestGuildRepo/Create_and_GetByID
+=== RUN   TestGuildRepo/Delete
+--- PASS: TestGuildRepo (0.06s)
+    --- PASS: TestGuildRepo/Create_and_GetByID (0.00s)
+    --- PASS: TestGuildRepo/Delete (0.00s)
+=== RUN   TestSettingsRepo
+=== RUN   TestSettingsRepo/Save_and_GetByKey
+=== RUN   TestSettingsRepo/GetAllByGuild
+=== RUN   TestSettingsRepo/Delete
+--- PASS: TestSettingsRepo (0.79s)
+    --- PASS: TestSettingsRepo/Save_and_GetByKey (0.00s)
+    --- PASS: TestSettingsRepo/GetAllByGuild (0.00s)
+    --- PASS: TestSettingsRepo/Delete (0.00s)
+=== RUN   TestMemoryRepo
+=== RUN   TestMemoryRepo/Save_and_GetByGuild
+=== RUN   TestMemoryRepo/SearchSimilar
+=== RUN   TestMemoryRepo/Guild_scoping
+--- PASS: TestMemoryRepo (0.09s)
+    --- PASS: TestMemoryRepo/Save_and_GetByGuild (0.00s)
+    --- PASS: TestMemoryRepo/SearchSimilar (0.00s)
+    --- PASS: TestMemoryRepo/Guild_scoping (0.00s)
+=== RUN   TestLoreRepo
+=== RUN   TestLoreRepo/CreateDocument_and_SaveChunk
+=== RUN   TestLoreRepo/SearchChunks
+--- PASS: TestLoreRepo (0.09s)
+    --- PASS: TestLoreRepo/CreateDocument_and_SaveChunk (0.01s)
+    --- PASS: TestLoreRepo/SearchChunks (0.00s)
+=== RUN   TestExceptionChannelRepo
+=== RUN   TestExceptionChannelRepo/Add_and_IsException
+=== RUN   TestExceptionChannelRepo/GetByGuild
+=== RUN   TestExceptionChannelRepo/Remove
+--- PASS: TestExceptionChannelRepo (0.07s)
+    --- PASS: TestExceptionChannelRepo/Add_and_IsException (0.00s)
+    --- PASS: TestExceptionChannelRepo/GetByGuild (0.00s)
+    --- PASS: TestExceptionChannelRepo/Remove (0.00s)
+=== RUN   TestToolLogRepo
+=== RUN   TestToolLogRepo/Save_and_GetByGuild
+--- PASS: TestToolLogRepo (0.14s)
+    --- PASS: TestToolLogRepo/Save_and_GetByGuild (0.00s)
+=== RUN   TestReminderRepo
+=== RUN   TestReminderRepo/Save_and_GetByGuild
+=== RUN   TestReminderRepo/GetDue
+--- PASS: TestReminderRepo (0.06s)
+    --- PASS: TestReminderRepo/Save_and_GetByGuild (0.00s)
+    --- PASS: TestReminderRepo/GetDue (0.00s)
+=== RUN   TestAuditRepo
+=== RUN   TestAuditRepo/Log_and_GetByGuild
+--- PASS: TestAuditRepo (0.06s)
+    --- PASS: TestAuditRepo/Log_and_GetByGuild (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/repository	(cached)

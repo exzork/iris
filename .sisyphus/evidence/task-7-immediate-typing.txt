@@ -1,0 +1,8 @@
+=== RUN   TestImmediateTypingBeforeLLM
+--- PASS: TestImmediateTypingBeforeLLM (0.10s)
+=== RUN   TestDelayedTypingWhenDisabled
+--- PASS: TestDelayedTypingWhenDisabled (0.30s)
+=== RUN   TestImmediateTypingRefreshesEveryRepeatInterval
+--- PASS: TestImmediateTypingRefreshesEveryRepeatInterval (0.30s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.710s

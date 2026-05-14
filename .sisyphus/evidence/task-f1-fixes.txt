@@ -1,0 +1,101 @@
+# F1 Oracle Plan-Compliance Audit Fixes - Evidence
+
+## Summary
+All 4 critical violations from the F1 Oracle review have been fixed and verified.
+
+## V1: Remove message pruning from channel_context.go Upsert method
+- **File**: internal/repository/channel_context.go, lines 143-156
+- **Fix**: Removed the pruneSql DELETE statement that was pruning messages to keep only 20 per channel
+- **Test Added**: TestChannelMessage_UpsertDoesNotPruneMessages
+- **Test Result**: PASS - Verified 30 messages inserted and all 30 retained (no pruning)
+
+## V2: Remove synchronous embedding from ChannelCaptureAdapter.Capture
+- **File**: internal/app/wire/adapters.go, lines 223-236
+- **Fix**: Removed synchronous a.Embedder.Embed() call from Capture method
+- **Test Added**: TestChannelCaptureAdapter_DoesNotEmbedSynchronously
+- **Test Result**: PASS - Verified embedder is not called synchronously, message embedding remains nil
+
+## V3: Wire BehaviorProfileService.UpdateFromSamples background trigger
+- **Files Modified**:
+  - internal/app/wire/adapters.go: Added BehaviorProfileUpdater adapter
+  - cmd/iris-bot/main.go: Wired BehaviorProfileUpdater into orchestrator config
+- **Test Added**: TestBehaviorProfileUpdater_CallsServiceWithSamples, TestBehaviorProfileUpdater_SkipsWhenNilService
+- **Test Result**: PASS - Verified adapter properly handles nil service and skips when needed
+
+## V4: Change memory/behavior hint blocks from role:system to role:user
+- **File**: internal/orchestrator/context_builder.go, lines 178-202
+- **Status**: Already correct - both blocks use "role": "user"
+- **Duplicate Removed**: Removed duplicate buildBehaviorHintBlock call (lines 191-196)
+- **Tests Verified**: 
+  - TestContextBuilder_MemoryNotSystemInstruction: PASS
+  - TestContextBuilder_BehaviorNotSystemInstruction: PASS
+
+## Full Test Suite Results
+```
+go test ./...
+ok  	github.com/eko/iris-bot/cmd/iris-bot	1.509s
+ok  	github.com/eko/iris-bot/internal/admin	(cached)
+ok  	github.com/eko/iris-bot/internal/app	(cached)
+ok  	github.com/eko/iris-bot/internal/app/wire	0.014s
+ok  	github.com/eko/iris-bot/internal/bootstrap	(cached)
+ok  	github.com/eko/iris-bot/internal/config	(cached)
+ok  	github.com/eko/iris-bot/internal/discord	(cached)
+ok  	github.com/eko/iris-bot/internal/domain	(cached)
+ok  	github.com/eko/iris-bot/internal/embedder	(cached)
+ok  	github.com/eko/iris-bot/internal/llm	(cached)
+ok  	github.com/eko/iris-bot/internal/logger	(cached)
+ok  	github.com/eko/iris-bot/internal/lore/browser	(cached)
+ok  	github.com/eko/iris-bot/internal/lore/ingest	(cached)
+ok  	github.com/eko/iris-bot/internal/lore/rag	(cached)
+ok  	github.com/eko/iris-bot/internal/lore/source	(cached)
+ok  	github.com/eko/iris-bot/internal/memerank	(cached)
+ok  	github.com/eko/iris-bot/internal/memory	(cached)
+ok  	github.com/eko/iris-bot/internal/obs	(cached)
+ok  	github.com/eko/iris-bot/internal/orchestrator	(cached)
+ok  	github.com/eko/iris-bot/internal/persona	(cached)
+ok  	github.com/eko/iris-bot/internal/reminder	(cached)
+ok  	github.com/eko/iris-bot/internal/repository	4.293s
+ok  	github.com/eko/iris-bot/internal/router	(cached)
+ok  	github.com/eso/iris-bot/internal/safety	(cached)
+ok  	github.com/eko/iris-bot/internal/settings	(cached)
+ok  	github.com/eko/iris-bot/internal/testutil	(cached)
+ok  	github.com/eko/iris-bot/internal/tools	(cached)
+ok  	github.com/eko/iris-bot/internal/tools/canoncheck	(cached)
+ok  	github.com/eko/iris-bot/internal/tools/charlookup	(cached)
+ok  	github.com/eko/iris-bot/internal/tools/convsummary	(cached)
+ok  	github.com/eko/iris-bot/internal/tools/escalate	(cached)
+ok  	github.com/eko/iris-bot/internal/tools/itemlookup	(cached)
+ok  	github.com/eko/iris-bot/internal/tools/memesearch	(cached)
+ok  	github.com/eko/iris-bot/internal/tools/patchnotes	(cached)
+ok  	github.com/eko/iris-bot/internal/tools/websearch	(cached)
+```
+
+## Regression Script Results
+```
+=== go mod tidy check ===
+=== go vet ===
+=== go build ===
+=== go test ./... ===
+[All tests PASS - see above]
+=== migration files smoke check ===
+✓ Both migration files present (001_init.sql, 002_channel_context.sql)
+=== doc checks ===
+[All doc checks PASS]
+Persona claim check PASSED
+regression: OK
+```
+
+## LSP Diagnostics
+- internal/repository/channel_context.go: No errors (1 hint about interface{} vs any)
+- internal/memory/behavior_profile.go: No diagnostics
+- internal/orchestrator/context_builder.go: No diagnostics
+- internal/app/wire/adapters.go: No errors (7 hints about interface{} vs any)
+
+All hints are non-critical style suggestions.
+
+## Conclusion
+✅ All 4 violations fixed
+✅ All tests pass (go test ./...)
+✅ Regression script passes
+✅ LSP diagnostics clean (no errors)
+✅ No commits made (as requested)

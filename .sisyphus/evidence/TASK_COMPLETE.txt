@@ -1,0 +1,58 @@
+# Task 7: Lore Capture Call Placement Fix - COMPLETE
+
+## Status: ✅ SUCCESS
+
+### Changes Implemented
+1. ✅ Moved lore capture call BEFORE Router.Decide() in orchestrator.go handle()
+2. ✅ Added startup logs (lore_capture_armed / lore_capture_disabled) in orchestrator.Start()
+3. ✅ Updated tests: renamed TestLoreCapturerNotCalledWhenRouterRejects → TestLoreCapturerCalledEvenWhenRouterRejects
+4. ✅ Added new test: TestLoreCapturerNotCalledForBotMessages
+5. ✅ Updated notepad files with findings, decisions, and learnings
+
+### Verification Results
+- ✅ go test ./internal/orchestrator -count=1: PASS (all tests pass)
+- ✅ go test ./... -count=1: PASS (33 packages, all pass)
+- ✅ go build ./...: SUCCESS (no errors)
+- ✅ docker compose build bot: SUCCESS
+- ✅ docker compose up -d --force-recreate bot: SUCCESS
+- ✅ Startup logs confirm: lore_capture_armed logged at 2026-05-14T07:31:39.262Z
+
+### Files Modified
+1. internal/orchestrator/orchestrator.go
+   - Lines 362-376: Moved capture call before Router.Decide()
+   - Lines 217-230: Added startup logs in Start()
+
+2. internal/orchestrator/orchestrator_test.go
+   - Lines 1297-1328: Updated TestLoreCapturerCalledEvenWhenRouterRejects
+   - Lines 1433-1467: Added TestLoreCapturerNotCalledForBotMessages
+
+3. .sisyphus/notepads/iris-lore-thread-protocol/issues.md
+   - Appended: Task 7 issue analysis
+
+4. .sisyphus/notepads/iris-lore-thread-protocol/learnings.md
+   - Appended: Task 7 learnings and patterns
+
+5. .sisyphus/notepads/iris-lore-thread-protocol/decisions.md
+   - Appended: Task 7 architectural decisions
+
+### Evidence Files
+- .sisyphus/evidence/lore-capture-move-recreate.txt (37 lines)
+- .sisyphus/evidence/lore-capture-move-logs.txt (4 lines)
+- .sisyphus/evidence/lore-capture-move-summary.txt (75 lines)
+
+### Key Insight
+**Bug Class**: "Capture gated on decision.Should silently swallowed all non-trigger lore chatter"
+
+The capture call was placed AFTER the early return on `!decision.Should`, causing all non-trigger messages to skip capture entirely. Result: `lore_sessions` table remained empty despite active channel chatter.
+
+**Fix**: Move capture BEFORE Router.Decide(). Capture now fires for all allowed-channel messages from real users, independent of reply decision. The adapter handles allow-list filtering independently.
+
+### No Regressions
+- All existing tests pass
+- No breaking changes to public APIs
+- Capture still respects LoreCaptureTimeout configuration
+- Bot messages still excluded (event.IsBot check)
+- Non-blocking goroutine pattern preserved
+
+### Ready for Production
+The fix is complete, tested, and verified. Lore capture will now fire for all allowed-channel messages, enabling proper population of lore_sessions table and downstream lore thread creation.

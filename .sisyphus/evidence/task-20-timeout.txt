@@ -1,0 +1,4 @@
+=== RUN   TestHTTPProviderTimeout
+--- PASS: TestHTTPProviderTimeout (1.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/tools/websearch	1.006s

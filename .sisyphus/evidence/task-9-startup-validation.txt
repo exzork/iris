@@ -1,0 +1,14 @@
+=== RUN   TestServerMemoryStartup_DimensionMismatch
+--- PASS: TestServerMemoryStartup_DimensionMismatch (0.00s)
+=== RUN   TestServerMemoryStartup_DimensionMatch
+--- PASS: TestServerMemoryStartup_DimensionMatch (0.00s)
+=== RUN   TestServerMemoryStartup_MissingPgvector
+--- PASS: TestServerMemoryStartup_MissingPgvector (0.00s)
+=== RUN   TestServerMemoryStartup_ColumnDimensionMismatch
+--- PASS: TestServerMemoryStartup_ColumnDimensionMismatch (0.00s)
+=== RUN   TestServerMemoryStartup_DisabledBypass
+--- PASS: TestServerMemoryStartup_DisabledBypass (0.00s)
+=== RUN   TestServerMemoryStartup_InvalidThreshold
+--- PASS: TestServerMemoryStartup_InvalidThreshold (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/memory	0.005s

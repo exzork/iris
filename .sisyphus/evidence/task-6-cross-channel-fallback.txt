@@ -1,0 +1,19 @@
+=== RUN   TestCrossChannel_ParseError_Fallback
+2026/05/11 15:53:18 WARN cross-channel classifier parse failed err="invalid character 'o' in literal null (expecting 'u')"
+--- PASS: TestCrossChannel_ParseError_Fallback (0.00s)
+=== RUN   TestCrossChannel_Timeout_Fallback
+2026/05/11 15:53:18 WARN cross-channel classifier call failed err="context deadline exceeded"
+--- PASS: TestCrossChannel_Timeout_Fallback (0.02s)
+=== RUN   TestCrossChannel_FiltersCurrentChannel
+--- PASS: TestCrossChannel_FiltersCurrentChannel (0.00s)
+=== RUN   TestCrossChannel_FiltersBotMessages
+--- PASS: TestCrossChannel_FiltersBotMessages (0.00s)
+=== RUN   TestCrossChannel_AllowList_FiltersUnallowed
+--- PASS: TestCrossChannel_AllowList_FiltersUnallowed (0.00s)
+=== RUN   TestCrossChannel_NoCandidates_ReturnsNilNoError
+--- PASS: TestCrossChannel_NoCandidates_ReturnsNilNoError (0.00s)
+=== RUN   TestCrossChannel_LLMError_Fallback
+2026/05/11 15:53:18 WARN cross-channel classifier call failed err=boom
+--- PASS: TestCrossChannel_LLMError_Fallback (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.024s

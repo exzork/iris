@@ -1,0 +1,15 @@
+=== RUN   TestCapture_EmbedderInterfaceAccepted
+--- PASS: TestCapture_EmbedderInterfaceAccepted (0.00s)
+=== RUN   TestCapture_SkipsEmbedWhenContentEmpty
+--- PASS: TestCapture_SkipsEmbedWhenContentEmpty (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/app/wire	0.004s
+
+=== RUN   TestCaptureIgnoredMessages
+--- PASS: TestCaptureIgnoredMessages (0.01s)
+=== RUN   TestCaptureReplyMetadata
+--- PASS: TestCaptureReplyMetadata (0.01s)
+=== RUN   TestCaptureWithAttachmentCount
+--- PASS: TestCaptureWithAttachmentCount (0.01s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.022s

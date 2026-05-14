@@ -1,0 +1,22 @@
+iris-bot  | {"time":"2026-05-14T00:05:00.438704148Z","level":"INFO","msg":"iris-bot starting"}
+iris-bot  | {"time":"2026-05-14T00:05:00.458263067Z","level":"INFO","msg":"model resolver ready","default":"kr/claude-sonnet-4.5","strong":"kr/claude-opus-4.7","router":"kr/claude-haiku-4.5"}
+iris-bot  | {"time":"2026-05-14T00:05:00.737687799Z","level":"INFO","msg":"memory startup","enabled":true,"threshold":0.72,"top_k":5,"workers":1,"backfill_limit":500}
+iris-bot  | {"time":"2026-05-14T00:05:00.73904465Z","level":"INFO","msg":"context classifier backend=similarity","threshold":0.7}
+iris-bot  | {"time":"2026-05-14T00:05:00.739124135Z","level":"INFO","msg":"escalate tool registered"}
+iris-bot  | {"time":"2026-05-14T00:05:00.739131668Z","level":"INFO","msg":"websearch tool registered","provider":"searxng","base_url":"http://searxng:8080"}
+iris-bot  | time=2026-05-14T00:05:06.979Z level=DEBUG msg=mcp_server_stderr server=twitter line="TweetSave MCP server running via stdio"
+iris-bot  | time=2026-05-14T00:05:21.985Z level=WARN msg=mcp_server_list_tools_failed server=twitter err="context deadline exceeded"
+iris-bot  | time=2026-05-14T00:05:22.003Z level=INFO msg=mcp_supervisor_loaded servers=1 tools_registered=0
+iris-bot  | {"time":"2026-05-14T00:05:22.003655187Z","level":"INFO","msg":"mcp supervisor ready","path":"/app/config/mcps.json","owner_id":291231194723647499}
+iris-bot  | {"time":"2026-05-14T00:05:22.003717271Z","level":"INFO","msg":"tools registered","count":5}
+iris-bot  | {"time":"2026-05-14T00:05:22.003784326Z","level":"INFO","msg":"lore_worker_started","poll_interval":"30s","llm_timeout":"0s"}
+iris-bot  | {"time":"2026-05-14T00:05:22.003971394Z","level":"INFO","msg":"all tools registered","count":11,"names":["web_search","mcp_bind_slash","mcp_unbind_slash","iris_get_models","mcp_add","mcp_remove","mcp_list","mcp_list_slash","iris_set_model","iris_reset_model","escalate_to_strong_model"]}
+iris-bot  | {"time":"2026-05-14T00:05:22.971107646Z","level":"INFO","msg":"Discord gateway connected"}
+iris-bot  | {"time":"2026-05-14T00:05:22.971140654Z","level":"INFO","msg":"auto-derived bot ID from session","botID":1503373336879566959}
+iris-bot  | {"time":"2026-05-14T00:05:22.971151052Z","level":"INFO","msg":"slash registrar attached","bot_id":1503373336879566959}
+iris-bot  | time=2026-05-14T00:05:23.406Z level=INFO msg=slash_commands_registered guild=761163966030151701 count=5
+iris-bot  | time=2026-05-14T00:05:25.174Z level=INFO msg=slash_commands_registered guild=687347156524204067 count=5
+iris-bot  | time=2026-05-14T00:05:25.497Z level=INFO msg=slash_commands_registered guild=761163966030151701 count=5
+iris-bot  | time=2026-05-14T00:05:25.560Z level=INFO msg=slash_commands_registered guild=687347156524204067 count=5
+iris-bot  | time=2026-05-14T00:05:27.397Z level=INFO msg="dispatching event" type=message_casual guild=761163966030151701 channel=1481495826655346811 user=901863849366528012
+iris-bot  | time=2026-05-14T00:05:27.400Z level=INFO msg=router_decision reason=no_trigger should=false

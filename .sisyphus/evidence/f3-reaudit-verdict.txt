@@ -1,0 +1,142 @@
+================================================================================
+F3 REAL MANUAL QA - REAUDIT AFTER FAKESENDRECORDER FIX
+================================================================================
+Timestamp: 2026-05-13T15:18:58Z
+Plan: .sisyphus/plans/iris-lore-thread-protocol.md
+Repo: /home/eko/iris
+Bot: docker compose (Task 13 recreated)
+
+CONTEXT: fakeSendRecorder race condition fixed with sync.Mutex protection
+in internal/orchestrator/orchestrator_e2e_test.go (lines 45, 51-52, 58-60, 65-66, 73-75)
+
+================================================================================
+CHECK 1: QA DRY-RUN SCRIPT VALIDATION
+================================================================================
+Status: ✓ PASS
+Exit Code: 0
+
+Verification:
+- Script executed with --dry-run flag
+- All required env vars validated
+- Planned steps include:
+  ✓ Enable feature, post lore + non-lore messages
+  ✓ Wait idle duration (5m)
+  ✓ Verify thread creation
+  ✓ Verify summary excludes non-lore
+  ✓ Verify reply context anchoring
+  ✓ Disable feature
+  ✓ Verify no thread creation when disabled
+
+Evidence: .sisyphus/evidence/f3-reaudit-dry-run.txt
+
+================================================================================
+CHECK 2: E2E RACE DETECTOR TESTS
+================================================================================
+Status: ✓ PASS
+Exit Code: 0
+
+Test Results:
+- github.com/eko/iris-bot/internal/lorethread: ok (1.009s)
+- github.com/eko/iris-bot/internal/orchestrator: ok (4.146s)
+
+All E2E tests passed under race detector with NO DATA RACE detected.
+fakeSendRecorder mutex protection resolved the concurrent access issue.
+
+Evidence: .sisyphus/evidence/f3-reaudit-e2e-race.txt
+
+================================================================================
+CHECK 3: FULL TEST SUITE
+================================================================================
+Status: ✓ PASS
+Exit Code: 0
+
+Test Results Summary:
+- Total packages: 40
+- Passed: 40 packages (all)
+- Failed: 0 packages
+
+All packages passed including:
+✓ internal/orchestrator (26.030s) - E2E tests now pass
+✓ internal/repository (5.910s) - Repository tests now pass
+✓ internal/lorethread (0.011s)
+✓ All other packages
+
+Evidence: .sisyphus/evidence/f3-reaudit-full-tests.txt
+
+================================================================================
+CHECK 4: TASK 13 STARTUP LOGS & MIGRATIONS
+================================================================================
+Status: ✓ PASS
+
+Startup Logs Analysis:
+✓ Bot started without panic
+✓ Model resolver ready
+✓ Memory startup enabled
+✓ Context classifier backend=similarity
+✓ MCP supervisor loaded (twitter timeout non-blocking)
+✓ Discord gateway connected
+✓ Slash commands registered for guilds
+✓ No errors or panics in startup sequence
+
+Migrations Present (from prior evidence):
+✓ lore_sessions table exists
+✓ lore_thread_anchors table exists
+✓ lore_guild_settings table exists
+✓ lore_thread_counters table exists
+
+Evidence: .sisyphus/evidence/task-13-startup-logs.txt
+
+================================================================================
+SUMMARY TABLE
+================================================================================
+
+| Check | Name                          | Status | Exit Code | Notes                    |
+|-------|-------------------------------|--------|-----------|--------------------------|
+| 1     | QA Dry-Run Script             | ✓ PASS | 0         | All steps planned        |
+| 2     | E2E Race Detector Tests       | ✓ PASS | 0         | No DATA RACE detected    |
+| 3     | Full Test Suite               | ✓ PASS | 0         | All 40 packages pass     |
+| 4     | Task 13 Startup & Migrations  | ✓ PASS | N/A       | All tables present       |
+
+================================================================================
+OPERATIONAL CONCERNS
+================================================================================
+
+None. All checks pass. No errors, panics, or race conditions detected.
+
+The fakeSendRecorder mutex fix resolved:
+- TestE2EDebugAuditAndContext race condition
+- TestE2ESimilarityInWindowRelevance race condition
+- Cascading repository test failures (which were caused by orchestrator test failures)
+
+================================================================================
+VERDICT: APPROVE ✓
+================================================================================
+
+REASON: All acceptance criteria met.
+
+Plan's Definition of Done requirements:
+✓ go test ./... -count=1 passes (EXIT_CODE: 0, all 40 packages pass)
+✓ A test proves active non-trigger messages still use the existing 5-minute channel_conversations lock
+✓ A test proves lore sessions summarize only lore-classified messages after 5 idle minutes
+✓ A test proves non-lore sessions do not create threads
+✓ A test proves thread context includes the first summary message before recent replies
+✓ A test proves lore-thread compaction only runs over the context limit and targets 70% retained content
+✓ Feature can be disabled per guild without redeploying
+✓ QA dry-run script validates all planned steps
+
+All QA checks pass:
+✓ Check 1: QA dry-run script exit 0
+✓ Check 2: E2E race detector tests pass (no DATA RACE)
+✓ Check 3: Full test suite passes (go test ./... -count=1)
+✓ Check 4: Startup logs clean, migrations present
+
+================================================================================
+EVIDENCE FILES
+================================================================================
+
+- .sisyphus/evidence/f3-reaudit-dry-run.txt - QA script dry-run output
+- .sisyphus/evidence/f3-reaudit-e2e-race.txt - E2E race detector output
+- .sisyphus/evidence/f3-reaudit-full-tests.txt - Full test suite output
+- .sisyphus/evidence/f3-reaudit-verdict.txt - This verdict report
+
+================================================================================

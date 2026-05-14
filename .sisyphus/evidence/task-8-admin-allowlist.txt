@@ -1,0 +1,16 @@
+=== RUN   TestAllowedChannelAddSuccess
+--- PASS: TestAllowedChannelAddSuccess (0.00s)
+=== RUN   TestAllowedChannelRemoveSuccess
+--- PASS: TestAllowedChannelRemoveSuccess (0.00s)
+=== RUN   TestAllowedChannelListSuccess
+--- PASS: TestAllowedChannelListSuccess (0.00s)
+=== RUN   TestAllowedChannelListEmpty
+--- PASS: TestAllowedChannelListEmpty (0.00s)
+=== RUN   TestAllowedChannelAddInvalidArgs
+--- PASS: TestAllowedChannelAddInvalidArgs (0.00s)
+=== RUN   TestAllowedChannelAddInvalidChannelID
+--- PASS: TestAllowedChannelAddInvalidChannelID (0.00s)
+=== RUN   TestDispatcherIntegrationAdminAllowed
+--- PASS: TestDispatcherIntegrationAdminAllowed (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/admin	0.002s

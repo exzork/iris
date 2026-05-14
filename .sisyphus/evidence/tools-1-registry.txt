@@ -1,0 +1,62 @@
+# T1 Evidence: Registry.OpenAIFunctions() Implementation
+
+## Files Changed
+- internal/tools/registry.go
+- internal/tools/registry_test.go
+
+## Implementation Summary
+
+### registry.go Changes
+Added one new method to *Registry:
+
+1. OpenAIFunctions() []map[string]interface{}
+   - Returns all non-admin tools in OpenAI function-calling format
+   - Acquires read lock on registry mutex
+   - Iterates all registered tool definitions
+   - Skips tools with AdminOnly=true
+   - Calls schema.ToOpenAIFunction() for each non-admin tool
+   - Returns empty slice (not nil) when no tools registered or all are admin
+   - Thread-safe with RWMutex protection
+
+### registry_test.go Changes
+Added two new tests:
+
+1. TestRegistry_OpenAIFunctions_SkipsAdminTools
+   - Registers one normal tool (fakeEchoTool, AdminOnly=false)
+   - Registers one admin tool (fakeAdminTool, AdminOnly=true)
+   - Calls OpenAIFunctions()
+   - Asserts result length is 1 (only normal tool)
+   - Verifies returned function name is "echo_tool"
+   - Confirms admin tool is excluded
+
+2. TestRegistry_OpenAIFunctions_RoundTrip
+   - Registers one normal tool (fakeEchoTool)
+   - Calls OpenAIFunctions()
+   - Marshals result[0] to JSON using encoding/json.Marshal
+   - Unmarshals back to map[string]interface{}
+   - Verifies structure preserved: type, function, name, parameters
+   - Confirms JSON round-trip maintains exact shape
+
+## Test Results
+All 33 tests pass (31 existing + 2 new):
+- TestRegistry_OpenAIFunctions_SkipsAdminTools: PASS
+- TestRegistry_OpenAIFunctions_RoundTrip: PASS
+- All existing registry tests: PASS
+- All schema tests: PASS
+
+## Build & Vet
+- go build ./...: SUCCESS
+- go vet ./...: SUCCESS
+- lsp_diagnostics: 0 errors, 0 warnings (only pre-existing hints)
+
+## Behavior Verified
+1. Admin tools excluded from output
+2. Empty slice returned when no non-admin tools
+3. JSON marshaling/unmarshaling preserves structure
+4. Thread-safe with proper mutex locking
+5. Exact OpenAI function format maintained
+
+## Integration Ready
+- Shape matches OpenAI function-calling spec
+- Ready for T2 (ChatWithTools implementation)
+- Downstream T2 can safely depend on this format

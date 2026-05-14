@@ -1,0 +1,18 @@
+Task 23: Character Lookup - Character Missing Scenario
+======================================================
+
+Test: TestToolRunCharacterMissing
+Preconditions: Query for non-existent character "TidakAda999"
+Steps: 1. Run lookup 2. Inspect response
+Expected Result: Says not found in indexed sources, suggests updating index
+
+Response:
+{"found":false,"message":"Karakter `TidakAda999` belum terindeks. Silakan periksa wiki Wuthering Waves secara langsung: https://wutheringwaves.fandom.com/wiki/Special:Search"}
+
+Verification:
+✓ found=false
+✓ message contains query name "TidakAda999"
+✓ message contains "belum terindeks" (not yet indexed)
+✓ message contains wiki Special:Search link
+✓ message in Indonesian
+✓ JSON structure valid

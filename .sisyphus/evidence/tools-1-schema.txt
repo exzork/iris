@@ -1,0 +1,60 @@
+# T1 Evidence: Schema.ToOpenAIFunction() Implementation
+
+## Files Changed
+- internal/tools/schema.go
+- internal/tools/schema_test.go
+
+## Implementation Summary
+
+### schema.go Changes
+Added two new methods to *Schema:
+
+1. ToOpenAIFunction() map[string]interface{}
+   - Converts schema to OpenAI function-calling format
+   - Returns nested structure: {"type":"function","function":{...}}
+   - Builds properties map with type and description for each field
+   - Collects required field names into required slice
+   - Maps Kind enums: string→"string", number→"number", bool→"boolean", object→"object", array→"array"
+   - Falls back to "string" for unknown kinds
+
+2. kindToOpenAIType(kind Kind) string
+   - Helper method for Kind to OpenAI type string conversion
+   - Handles all 5 Kind constants
+
+### schema_test.go Changes
+Added TestSchema_ToOpenAIFunction_Shape test:
+- Tests schema with 1 required string field (query)
+- Tests schema with 1 optional number field (limit)
+- Tests schema with 1 optional bool field (verbose)
+- Validates nested structure: type, function, parameters, properties, required
+- Asserts correct type mappings: string→"string", number→"number", bool→"boolean"
+- Verifies required array contains only required field names
+
+## Test Results
+All 31 tests pass:
+- TestSchema_ToOpenAIFunction_Shape: PASS
+- All existing schema tests: PASS
+- All existing registry tests: PASS
+
+## Build & Vet
+- go build ./...: SUCCESS
+- go vet ./...: SUCCESS
+- lsp_diagnostics: 0 errors, 0 warnings (only pre-existing hints)
+
+## Exact Output Format Verified
+{
+  "type": "function",
+  "function": {
+    "name": "search_tool",
+    "description": "Search for information",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {"type": "string", "description": "Search query"},
+        "limit": {"type": "number", "description": "Result limit"},
+        "verbose": {"type": "boolean", "description": "Verbose output"}
+      },
+      "required": ["query"]
+    }
+  }
+}

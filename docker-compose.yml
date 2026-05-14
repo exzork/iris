@@ -1,0 +1,122 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: iris-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - iris-network
+
+  migrate:
+    image: pgvector/pgvector:pg16
+    container_name: iris-migrate
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    command: >
+      sh -c "until pg_isready -h postgres -U $${POSTGRES_USER} -d $${POSTGRES_DB}; do sleep 1; done &&
+             for f in /migrations/*.sql; do echo \"Applying $$f\"; PGPASSWORD=$${POSTGRES_PASSWORD} psql -h postgres -U $${POSTGRES_USER} -d $${POSTGRES_DB} -v ON_ERROR_STOP=1 -f $$f; done"
+    restart: "no"
+    networks:
+      - iris-network
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: iris-searxng
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8888:8080"
+    volumes:
+      - ./docker/searxng:/etc/searxng:rw
+    environment:
+      - BASE_URL=http://localhost:8888/
+      - INSTANCE_NAME=iris-searxng
+      - SEARXNG_SECRET=change-me-iris-secret
+    networks:
+      - iris-network
+
+  bot:
+    build: .
+    container_name: iris-bot
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DATABASE_URL: ${DATABASE_URL}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2048}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-2m}
+      LLM_CHAT_TIMEOUT: ${LLM_CHAT_TIMEOUT:-2m}
+      LLM_TOOL_TIMEOUT: ${LLM_TOOL_TIMEOUT:-10m}
+      LLM_MAX_RETRIES: ${LLM_MAX_RETRIES:-3}
+      LLM_RETRY_DELAY: ${LLM_RETRY_DELAY:-1s}
+      IRIS_EMBED_MODEL_PATH: ${IRIS_EMBED_MODEL_PATH}
+      IRIS_EMBED_TOKENIZER_PATH: ${IRIS_EMBED_TOKENIZER_PATH}
+      IRIS_EMBED_SIM_THRESHOLD: ${IRIS_EMBED_SIM_THRESHOLD}
+      IRIS_SEARXNG_URL: ${IRIS_SEARXNG_URL:-http://searxng:8080}
+      IRIS_OWNER_ID: ${IRIS_OWNER_ID}
+      MCP_CONFIG_PATH: ${MCP_CONFIG_PATH}
+      DEBUG: ${DEBUG}
+      IRIS_LORE_THREADS_ENABLED: ${IRIS_LORE_THREADS_ENABLED}
+      IRIS_LORE_IDLE_DURATION: ${IRIS_LORE_IDLE_DURATION:-5m}
+      IRIS_LORE_COMPACTION_TARGET: ${IRIS_LORE_COMPACTION_TARGET:-0.70}
+      IRIS_LORE_THREAD_CAP_PER_HOUR: ${IRIS_LORE_THREAD_CAP_PER_HOUR:-6}
+      IRIS_LORE_WORKER_POLL_INTERVAL: ${IRIS_LORE_WORKER_POLL_INTERVAL:-30s}
+      IRIS_LORE_LLM_TIMEOUT: ${IRIS_LORE_LLM_TIMEOUT:-30s}
+      IRIS_LORE_LLM_MODEL: ${IRIS_LORE_LLM_MODEL}
+      IRIS_LORE_CAPTURE_TIMEOUT: ${IRIS_LORE_CAPTURE_TIMEOUT:-60s}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      searxng:
+        condition: service_started
+    volumes:
+      - /opt/iris-models:/opt/iris-models:ro
+      - ./config:/app/config
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+    networks:
+      - iris-network
+
+networks:
+  iris-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

@@ -1,0 +1,42 @@
+=== RUN   TestVersion_IsSemver
+--- PASS: TestVersion_IsSemver (0.00s)
+=== RUN   TestPersonaVersion
+--- PASS: TestPersonaVersion (0.00s)
+=== RUN   TestBuildSystemPrompt_IndonesianMandate
+--- PASS: TestBuildSystemPrompt_IndonesianMandate (0.00s)
+=== RUN   TestBuildSystemPrompt_PersonaPrecedenceSections
+--- PASS: TestBuildSystemPrompt_PersonaPrecedenceSections (0.00s)
+=== RUN   TestBuildSystemPrompt_MemoryCannotOverridePersona
+--- PASS: TestBuildSystemPrompt_MemoryCannotOverridePersona (0.00s)
+=== RUN   TestImmutablePersona_NoURLs
+--- PASS: TestImmutablePersona_NoURLs (0.00s)
+=== RUN   TestImmutablePersona_MentionsWebsearch
+--- PASS: TestImmutablePersona_MentionsWebsearch (0.00s)
+=== RUN   TestImmutablePersona_IdentityLockPreserved
+--- PASS: TestImmutablePersona_IdentityLockPreserved (0.00s)
+=== RUN   TestBuildSystemPrompt_UnsupportedLoreCaveat
+--- PASS: TestBuildSystemPrompt_UnsupportedLoreCaveat (0.00s)
+=== RUN   TestBuildSystemPrompt_NoInventedPersonality
+--- PASS: TestBuildSystemPrompt_NoInventedPersonality (0.00s)
+=== RUN   TestBuildSystemPrompt_MemoryFactsRendered
+--- PASS: TestBuildSystemPrompt_MemoryFactsRendered (0.00s)
+=== RUN   TestBuildSystemPrompt_LoreCitationsRendered
+--- PASS: TestBuildSystemPrompt_LoreCitationsRendered (0.00s)
+=== RUN   TestBuildSystemPrompt_EmptyInputsStillValid
+--- PASS: TestBuildSystemPrompt_EmptyInputsStillValid (0.00s)
+=== RUN   TestBuildSystemPrompt_Deterministic
+--- PASS: TestBuildSystemPrompt_Deterministic (0.00s)
+=== RUN   TestValidateLoreCitation_RequiresFandomDomain
+=== RUN   TestValidateLoreCitation_RequiresFandomDomain/valid_fandom
+=== RUN   TestValidateLoreCitation_RequiresFandomDomain/wrong_domain
+=== RUN   TestValidateLoreCitation_RequiresFandomDomain/missing_title
+=== RUN   TestValidateLoreCitation_RequiresFandomDomain/missing_excerpt
+--- PASS: TestValidateLoreCitation_RequiresFandomDomain (0.00s)
+    --- PASS: TestValidateLoreCitation_RequiresFandomDomain/valid_fandom (0.00s)
+    --- PASS: TestValidateLoreCitation_RequiresFandomDomain/wrong_domain (0.00s)
+    --- PASS: TestValidateLoreCitation_RequiresFandomDomain/missing_title (0.00s)
+    --- PASS: TestValidateLoreCitation_RequiresFandomDomain/missing_excerpt (0.00s)
+=== RUN   TestBuildSystemPrompt_RejectsNonFandomCitations
+--- PASS: TestBuildSystemPrompt_RejectsNonFandomCitations (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/persona	0.004s

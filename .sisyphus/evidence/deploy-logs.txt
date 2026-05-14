@@ -1,0 +1,3 @@
+iris-bot  | {"time":"2026-05-12T01:44:32.456089514Z","level":"INFO","msg":"iris-bot starting"}
+iris-bot  | {"time":"2026-05-12T01:44:32.721961597Z","level":"INFO","msg":"context classifier backend=similarity","threshold":0.55}
+iris-bot  | {"time":"2026-05-12T01:44:33.637254371Z","level":"INFO","msg":"Discord gateway connected"}

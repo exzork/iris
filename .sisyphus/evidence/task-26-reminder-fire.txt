@@ -1,0 +1,12 @@
+PASS: Reminder fired in configured channel
+  Guild: 123, Channel: 456
+  Message: Pengingat harian
+  Reminder ID: 1
+
+Test: TestReminderFiresInConfiguredChannel
+- Created daily reminder at 10:00 Asia/Jakarta in channel 456
+- FakeClock set to 09:59:59 Asia/Jakarta (2026-05-11 02:59:59 UTC)
+- Advanced clock by 2 seconds to trigger reminder
+- TickOnce executed and sent message to configured guild/channel
+- Message content verified: "Pengingat harian"
+- Reminder successfully fired at scheduled time

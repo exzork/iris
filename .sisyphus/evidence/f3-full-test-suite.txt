@@ -1,0 +1,57 @@
+ok  	github.com/eko/iris-bot/cmd/iris-bot	0.887s
+?   	github.com/eko/iris-bot/cmd/migrate	[no test files]
+ok  	github.com/eko/iris-bot/internal/admin	0.009s
+ok  	github.com/eko/iris-bot/internal/app	0.015s
+ok  	github.com/eko/iris-bot/internal/app/wire	0.106s
+ok  	github.com/eko/iris-bot/internal/bootstrap	0.011s
+ok  	github.com/eko/iris-bot/internal/config	0.016s
+ok  	github.com/eko/iris-bot/internal/discord	0.418s
+ok  	github.com/eko/iris-bot/internal/domain	0.002s
+ok  	github.com/eko/iris-bot/internal/embedder	0.008s
+ok  	github.com/eko/iris-bot/internal/llm	25.625s
+ok  	github.com/eko/iris-bot/internal/logger	0.024s
+ok  	github.com/eko/iris-bot/internal/lore/browser	0.018s
+ok  	github.com/eko/iris-bot/internal/lore/ingest	0.013s
+ok  	github.com/eko/iris-bot/internal/lore/rag	0.006s
+ok  	github.com/eko/iris-bot/internal/lore/source	0.005s
+ok  	github.com/eko/iris-bot/internal/lorethread	0.004s
+ok  	github.com/eko/iris-bot/internal/mcp	2.515s
+ok  	github.com/eko/iris-bot/internal/memerank	0.003s
+ok  	github.com/eko/iris-bot/internal/memory	0.705s
+ok  	github.com/eko/iris-bot/internal/obs	0.020s
+ok  	github.com/eko/iris-bot/internal/orchestrator	24.102s
+ok  	github.com/eko/iris-bot/internal/persona	0.009s
+ok  	github.com/eko/iris-bot/internal/reminder	0.010s
+--- FAIL: TestChannelMessageRepo (1.28s)
+    --- FAIL: TestChannelMessageRepo/Upsert_does_not_prune_messages_(stores_all_indefinitely) (1.00s)
+        repository_test.go:616: failed to upsert message 1: failed to upsert message: ERROR: deadlock detected (SQLSTATE 40P01)
+    --- FAIL: TestChannelMessageRepo/ListRecent_returns_messages_in_chronological_order (0.07s)
+        repository_test.go:643: expected at least 1 message
+    --- FAIL: TestChannelMessageRepo/Reply_metadata_round-trips (0.00s)
+        repository_test.go:676: failed to upsert reply message: failed to upsert message: ERROR: insert or update on table "channel_messages" violates foreign key constraint "channel_messages_guild_id_fkey" (SQLSTATE 23503)
+    --- FAIL: TestChannelMessageRepo/MarkDeleted (0.00s)
+        repository_test.go:710: failed to upsert message: failed to upsert message: ERROR: insert or update on table "channel_messages" violates foreign key constraint "channel_messages_guild_id_fkey" (SQLSTATE 23503)
+    --- FAIL: TestChannelMessageRepo/UpdateContent (0.00s)
+        repository_test.go:745: failed to upsert message: failed to upsert message: ERROR: insert or update on table "channel_messages" violates foreign key constraint "channel_messages_guild_id_fkey" (SQLSTATE 23503)
+    --- FAIL: TestChannelMessageRepo/ListByUserAcrossChannels (0.02s)
+        repository_test.go:798: expected at least 9 messages, got 0
+    --- FAIL: TestChannelMessageRepo/PruneOldest (0.02s)
+        repository_test.go:833: expected exactly 5 messages after pruning, got 0
+FAIL
+FAIL	github.com/eko/iris-bot/internal/repository	9.032s
+ok  	github.com/eko/iris-bot/internal/router	0.004s
+ok  	github.com/eko/iris-bot/internal/safety	0.010s
+ok  	github.com/eko/iris-bot/internal/settings	0.005s
+ok  	github.com/eko/iris-bot/internal/slash	0.005s
+ok  	github.com/eko/iris-bot/internal/testutil	0.064s
+ok  	github.com/eko/iris-bot/internal/tools	0.204s
+ok  	github.com/eko/iris-bot/internal/tools/canoncheck	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/charlookup	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/convsummary	0.004s
+ok  	github.com/eko/iris-bot/internal/tools/escalate	0.001s
+ok  	github.com/eko/iris-bot/internal/tools/itemlookup	0.003s
+ok  	github.com/eko/iris-bot/internal/tools/memesearch	0.003s
+ok  	github.com/eko/iris-bot/internal/tools/modelswitch	0.007s
+ok  	github.com/eko/iris-bot/internal/tools/patchnotes	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/websearch	2.011s
+FAIL

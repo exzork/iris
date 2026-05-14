@@ -1,0 +1,15 @@
+Task 28: Meme Reaction and Ranking System - Evidence
+
+QA Scenario: meme upvote changes ranking
+Tool: Go test
+Preconditions: two meme records in guild `g1`
+Steps: 
+  1. Create meme A (score 0) and meme B (score 0) in guild 1
+  2. Record upvote for meme B from user 42
+  3. Query top memes for guild 1
+Expected Result: meme B ranks above meme A
+Actual Result: PASS - TestTopMemesRankingAfterUpvote
+  - Meme B has score 1 (1 upvote - 0 downvotes)
+  - Meme A has score 0
+  - TopMemes returns [B, A] in descending score order
+Evidence: internal/memerank/service_test.go::TestTopMemesRankingAfterUpvote

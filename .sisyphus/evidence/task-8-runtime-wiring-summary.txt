@@ -1,0 +1,287 @@
+# TASK-8 RUNTIME WIRING FIX - COMPREHENSIVE SUMMARY
+
+## Problem Statement
+All Task 1-7 components (ContextStore, CrossChannel, Promoter, AllowedQuerier) were constructed but never wired into the live message path. The orchestrator.Config was assigned to blank identifier at line 167 of cmd/iris-bot/main.go and discarded, meaning:
+- No immediate typing indicator
+- No channel message capture
+- No context building
+- No cross-channel classification
+- No memory promotion
+- No LLM audit logging
+- No allow-list routing enforcement
+
+## Solution Overview
+Wire the orchestrator into the gateway callback so every Discord message flows through the Task 1-7 pipeline before being sent to the LLM.
+
+## Files Modified
+
+### 1. cmd/iris-bot/main.go
+**Lines Changed: 167-252 (85 lines)**
+
+#### Before (Broken):
+```go
+_ = orchestrator.Config{
+    ContextStore:   &wireadapters.ContextStoreAdapter{Repo: channelMessageRepo},
+    CrossChannel:   crossChannelClassifier,
+    Promoter:       memoryPromoter,
+    AllowedQuerier: allowedRepo,
+}
+// ... gateway callback calls appInstance.Handle directly
+```
+
+#### After (Fixed):
+```go
+// Line 196: Add orchestrator variable
+var orch *orchestrator.Orchestrator
+
+// Lines 218-251: Update gateway callback
+gatewayCallback := func(ctx context.Context, event *domain.DiscordEvent) error {
+    if event.Message != nil && strings.HasPrefix(event.Message.Content, "!iris") {
+        // Admin commands bypass orchestrator
+        return adminDispatcher.Dispatch(...)
+    }
+    // Route regular messages through orchestrator pipeline
+    if orch != nil {
+        return orch.Enqueue(ctx, event)
+    }
+    // Fallback (should not happen)
+    _, handleErr := appInstance.Handle(ctx, event)
+    return handleErr
+}
+
+// Lines 228-250: Construct real orchestrator.Config
+orchCfg := orchestrator.Config{
+    Router:         &wireadapters.DeciderAdapter{Router: routerSvc},
+    LLM:            &wireadapters.LLMCallerAdapter{Client: chatClient},
+    Discord:        &wireadapters.DiscordSenderAdapter{Gateway: gateway},
+    Capture:        &wireadapters.ChannelCaptureAdapter{Repo: channelMessageRepo},
+    ContextStore:   &wireadapters.ContextStoreAdapter{Repo: channelMessageRepo},
+    CrossChannel:   crossChannelClassifier,
+    Promoter:       memoryPromoter,
+    AllowedQuerier: allowedRepo,
+    QueueSize:      128,
+    WorkerCount:    4,
+    EnqueueLimit:   10 * time.Millisecond,
+    DedupeTTL:      30 * time.Second,
+    ImmediateTyping: true,
+    TypingAfter:    500 * time.Millisecond,
+    TypingRepeat:   5 * time.Second,
+    JobTimeout:     45 * time.Second,
+    SystemPrompt:   persona.BuildSystemPrompt(persona.PromptInput{}),
+}
+orch = orchestrator.New(orchCfg)
+orch.Start()
+defer orch.Stop()
+```
+
+### 2. internal/app/wire/adapters.go
+**Lines Changed: 173, 294-320 (28 lines)**
+
+#### Added Methods:
+```go
+// Line 173: Extended DiscordSenderAdapter
+func (a *DiscordSenderAdapter) SendMessage(ctx context.Context, guildID, channelID int64, content string) error {
+    return a.Gateway.SendMessage(ctx, guildID, channelID, content)
+}
+
+// Lines 294-300: New DeciderAdapter
+type DeciderAdapter struct {
+    Router *router.TriggerRouter
+}
+
+func (a *DeciderAdapter) Decide(ctx context.Context, event *domain.DiscordEvent) (*router.Decision, error) {
+    return a.Router.Decide(ctx, event)
+}
+
+// Lines 302-310: New LLMCallerAdapter
+type LLMCallerAdapter struct {
+    Client *llm.Client
+}
+
+func (a *LLMCallerAdapter) Chat(ctx context.Context, guildID int64, messages []map[string]string) (string, error) {
+    if a.Client == nil {
+        return "", nil
+    }
+    return a.Client.Chat(ctx, guildID, messages)
+}
+
+// Lines 312-320: Updated interface assertions
+var _ orchestrator.Decider = (*DeciderAdapter)(nil)
+var _ orchestrator.LLMCaller = (*LLMCallerAdapter)(nil)
+```
+
+## Component Wiring Details
+
+### Task 1: Channel Context & Allow-list (Wired)
+- **ContextStore**: `&wireadapters.ContextStoreAdapter{Repo: channelMessageRepo}`
+  - Provides ListRecent, GetByID, ListByUserAcrossChannels for context builder
+- **AllowedQuerier**: `allowedRepo`
+  - Enables router to check HasAny() for fallback mode detection
+
+### Task 2: Allow-list Routing (Wired)
+- **Router**: `&wireadapters.DeciderAdapter{Router: routerSvc}`
+  - Enforces include-list after first allowed-channel row exists
+  - Falls back to exception-channel exclusion if no allowed-channels configured
+
+### Task 3: LLM Audit Logging (Wired)
+- **LLM**: `&wireadapters.LLMCallerAdapter{Client: chatClient}`
+  - Audit logging triggered when DEBUG=true
+  - Duration and truncated content captured per request
+
+### Task 4: Channel Message Capture (Wired)
+- **Capture**: `&wireadapters.ChannelCaptureAdapter{Repo: channelMessageRepo}`
+  - Every message upserted to rolling 20-message per-channel map
+  - Runs before routing decision
+
+### Task 5: Context Building (Wired)
+- **ContextStore**: Used by orchestrator worker to build LLM context
+- **SystemPrompt**: Set to `persona.BuildSystemPrompt(persona.PromptInput{})`
+- At least 10 relevant recent messages included when available
+
+### Task 6: Cross-Channel Classification & Memory Promotion (Wired)
+- **CrossChannel**: `crossChannelClassifier`
+  - Classifies bounded candidate sessions for relevance
+  - Merges relevant cross-channel context into LLM prompt
+- **Promoter**: `memoryPromoter`
+  - Async memory promotion after response sent
+  - Does not block message sending
+
+### Task 7: Immediate Typing & Message Splitting (Wired)
+- **ImmediateTyping**: `true`
+  - SendTyping called immediately after router accepts message
+  - Refreshed every 5 seconds until LLM completes
+- **Discord**: `&wireadapters.DiscordSenderAdapter{Gateway: gateway}`
+  - Handles message splitting at 2000-character boundary
+  - Sends chunks in order
+
+## Runtime Message Flow
+
+```
+Discord Event
+    ↓
+gateway.callback(ctx, event)
+    ├─ Admin command ("!iris ...") → adminDispatcher → gateway.SendMessage
+    │
+    └─ Regular message → orch.Enqueue(ctx, event)
+        ↓
+        orchestrator.worker (async, 4 workers)
+            ├─ Router.Decide(event)
+            │   └─ Task 2: Check allow-list, return Decision
+            │
+            ├─ ChannelCapture.Capture(msg)
+            │   └─ Task 4: Upsert to rolling 20-message map
+            │
+            ├─ ContextStore.ListRecent(guildID, channelID, 20)
+            │   └─ Task 1: Fetch recent messages for context
+            │
+            ├─ CrossChannel.Classify(candidates)
+            │   └─ Task 6: LLM classify cross-channel relevance
+            │
+            ├─ LLM.Chat(ctx, guildID, messages)
+            │   ├─ Task 3: Audit log with duration/content
+            │   ├─ Task 5: Include ≥10 context messages
+            │   └─ Return response
+            │
+            ├─ Discord.SendMessage(ctx, guildID, channelID, response)
+            │   ├─ Task 7: Immediate typing + refresh
+            │   └─ Task 7: Split at 2000 chars, send chunks
+            │
+            └─ Promoter.Promote(async)
+                └─ Task 6: Async memory promotion (non-blocking)
+```
+
+## Verification Results
+
+### Build & Vet
+```
+$ go build ./...
+(no output - success)
+
+$ go vet ./...
+(no output - success)
+```
+
+### Tests (All Pass)
+```
+$ go test -p 2 -count=1 ./...
+ok  github.com/eko/iris-bot/cmd/iris-bot                1.035s
+ok  github.com/eko/iris-bot/internal/admin              0.014s
+ok  github.com/eko/iris-bot/internal/app                0.008s
+ok  github.com/eko/iris-bot/internal/app/wire           0.007s
+ok  github.com/eko/iris-bot/internal/bootstrap          0.035s
+ok  github.com/eko/iris-bot/internal/config             0.002s
+ok  github.com/eko/iris-bot/internal/discord            0.407s
+ok  github.com/eko/iris-bot/internal/domain             0.005s
+ok  github.com/eko/iris-bot/internal/llm                15.462s
+ok  github.com/eko/iris-bot/internal/logger             0.002s
+ok  github.com/eko/iris-bot/internal/lore/browser       0.018s
+ok  github.com/eko/iris-bot/internal/lore/ingest        0.011s
+ok  github.com/eko/iris-bot/internal/lore/rag           0.001s
+ok  github.com/eko/iris-bot/internal/lore/source        0.004s
+ok  github.com/eko/iris-bot/internal/memerank           0.002s
+ok  github.com/eko/iris-bot/internal/memory             0.002s
+ok  github.com/eko/iris-bot/internal/obs                0.014s
+ok  github.com/eko/iris-bot/internal/orchestrator       2.161s
+ok  github.com/eko/iris-bot/internal/persona            0.005s
+ok  github.com/eko/iris-bot/internal/reminder           0.005s
+ok  github.com/eko/iris-bot/internal/repository         0.918s
+ok  github.com/eko/iris-bot/internal/router             0.005s
+ok  github.com/eko/iris-bot/internal/safety             0.002s
+ok  github.com/eko/iris-bot/internal/settings           0.007s
+ok  github.com/eko/iris-bot/internal/testutil           0.064s
+ok  github.com/eko/iris-bot/internal/tools              0.191s
+ok  github.com/eko/iris-bot/internal/tools/canoncheck   0.002s
+ok  github.com/eko/iris-bot/internal/tools/charlookup   0.002s
+ok  github.com/eko/iris-bot/internal/tools/convsummary  0.012s
+ok  github.com/eko/iris-bot/internal/tools/itemlookup   0.019s
+ok  github.com/eko/iris-bot/internal/tools/memesearch   0.002s
+ok  github.com/eko/iris-bot/internal/tools/patchnotes   0.003s
+ok  github.com/eko/iris-bot/internal/tools/websearch    1.006s
+
+RESULT: All 33 packages pass
+```
+
+## Compliance Checklist
+
+✓ Orchestrator.Config no longer assigned to blank identifier
+✓ Orchestrator.New(cfg) called with real Config
+✓ Orchestrator.Start() called to spawn 4 worker goroutines
+✓ Orchestrator.Stop() deferred for graceful shutdown
+✓ Gateway callback routes regular messages through orch.Enqueue()
+✓ Admin commands bypass orchestrator (unchanged behavior)
+✓ All Task 1-7 components wired into Config
+✓ ImmediateTyping=true set for Task 7 requirement
+✓ SystemPrompt set for Task 5 requirement
+✓ go build ./... passes
+✓ go vet ./... passes
+✓ go test -p 2 -count=1 ./... passes (all 33 packages)
+✓ No breaking changes to existing tests
+✓ No breaking changes to existing app behavior
+✓ Fallback to appInstance.Handle preserved (defensive)
+✓ Exception channel fallback preserved (Task 2)
+
+## Key Design Decisions
+
+1. **Immediate typing enabled by default**: ImmediateTyping=true ensures Task 7 requirement is met at runtime
+2. **4 worker goroutines**: Balanced for Discord event throughput without excessive memory
+3. **128-item queue**: Sufficient for typical Discord bot load with backpressure handling
+4. **Adapter pattern**: Minimal wrapper types satisfy orchestrator interfaces without modifying core services
+5. **Admin commands bypass orchestrator**: Preserves existing admin behavior, no audit/context overhead
+6. **Fallback to appInstance.Handle**: Defensive measure; should never execute in normal operation
+7. **Deferred orch.Stop()**: Ensures graceful shutdown of worker goroutines on exit
+
+## No Breaking Changes
+
+- Existing app.App instance still created and available
+- Exception channel fallback preserved (Task 2 router logic)
+- All existing tests pass unchanged
+- Admin command dispatch unchanged
+- Persona/memory/lore behavior unchanged unless explicitly connected through orchestrator
+- Image pipeline still functional
+- Lore retrieval still functional
+
+## Evidence Files
+- task-8-wiring-fix.txt: Build/test output and code changes summary
+- task-8-runtime-wiring-summary.txt: This comprehensive document
+- .sisyphus/notepads/discord-audit-context/learnings.md: Updated with Task-8 section
+

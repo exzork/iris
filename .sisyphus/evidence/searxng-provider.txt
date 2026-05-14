@@ -1,0 +1,56 @@
+=== RUN   TestIsCanonAuthoritativeFandomTrue
+--- PASS: TestIsCanonAuthoritativeFandomTrue (0.00s)
+=== RUN   TestIsCanonAuthoritativeKuroGamesTrue
+--- PASS: TestIsCanonAuthoritativeKuroGamesTrue (0.00s)
+=== RUN   TestIsCanonAuthoritativeRandomFalse
+--- PASS: TestIsCanonAuthoritativeRandomFalse (0.00s)
+=== RUN   TestIsCanonAuthoritativeMalformedURLFalse
+--- PASS: TestIsCanonAuthoritativeMalformedURLFalse (0.00s)
+=== RUN   TestIsCanonAuthoritativeEmptyFalse
+--- PASS: TestIsCanonAuthoritativeEmptyFalse (0.00s)
+=== RUN   TestHTTPProviderNormalizesResults
+--- PASS: TestHTTPProviderNormalizesResults (0.00s)
+=== RUN   TestHTTPProviderTimeout
+--- PASS: TestHTTPProviderTimeout (1.00s)
+=== RUN   TestHTTPProvider5xxReturnsProviderFailure
+--- PASS: TestHTTPProvider5xxReturnsProviderFailure (0.00s)
+=== RUN   TestHTTPProviderInvalidJSONReturnsInvalidResponse
+--- PASS: TestHTTPProviderInvalidJSONReturnsInvalidResponse (0.00s)
+=== RUN   TestHTTPProviderSetsAuthoritativeFlag
+--- PASS: TestHTTPProviderSetsAuthoritativeFlag (0.00s)
+=== RUN   TestFakeProviderReturnsResults
+--- PASS: TestFakeProviderReturnsResults (0.00s)
+=== RUN   TestSearXNG_ReturnsParsedResults
+--- PASS: TestSearXNG_ReturnsParsedResults (0.00s)
+=== RUN   TestSearXNG_EmptyQuery
+--- PASS: TestSearXNG_EmptyQuery (0.00s)
+=== RUN   TestSearXNG_Timeout
+--- PASS: TestSearXNG_Timeout (1.00s)
+=== RUN   TestSearXNG_5xx_ReturnsProviderFailure
+--- PASS: TestSearXNG_5xx_ReturnsProviderFailure (0.00s)
+=== RUN   TestSearXNG_BadJSON_ReturnsInvalidResponse
+--- PASS: TestSearXNG_BadJSON_ReturnsInvalidResponse (0.00s)
+=== RUN   TestSearXNG_RespectsLimit
+--- PASS: TestSearXNG_RespectsLimit (0.00s)
+=== RUN   TestSearXNG_Name
+--- PASS: TestSearXNG_Name (0.00s)
+=== RUN   TestToolSchemaContract
+--- PASS: TestToolSchemaContract (0.00s)
+=== RUN   TestToolRunCallsProviderAndFormatsJSON
+--- PASS: TestToolRunCallsProviderAndFormatsJSON (0.00s)
+=== RUN   TestToolRunRejectsEmptyQuery
+--- PASS: TestToolRunRejectsEmptyQuery (0.00s)
+=== RUN   TestToolRunClampsLimit
+=== RUN   TestToolRunClampsLimit/limit_100_clamped_to_10
+=== RUN   TestToolRunClampsLimit/limit_0_defaults_to_5
+=== RUN   TestToolRunClampsLimit/limit_negative_defaults_to_5
+=== RUN   TestToolRunClampsLimit/limit_3_respected
+--- PASS: TestToolRunClampsLimit (0.00s)
+    --- PASS: TestToolRunClampsLimit/limit_100_clamped_to_10 (0.00s)
+    --- PASS: TestToolRunClampsLimit/limit_0_defaults_to_5 (0.00s)
+    --- PASS: TestToolRunClampsLimit/limit_negative_defaults_to_5 (0.00s)
+    --- PASS: TestToolRunClampsLimit/limit_3_respected (0.00s)
+=== RUN   TestToolRunPropagatesTimeoutError
+--- PASS: TestToolRunPropagatesTimeoutError (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/tools/websearch	2.011s

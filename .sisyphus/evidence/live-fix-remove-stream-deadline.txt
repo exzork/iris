@@ -1,0 +1,70 @@
+## REMOVE STREAM DEADLINE - Evidence Report
+Date: 2026-05-12T07:01:59Z
+
+### Changes Made
+
+#### 1. internal/llm/client.go - ChatStream (lines 226-287)
+- REMOVED: `streamCtx, cancel := context.WithTimeout(ctx, 120*time.Second)` (line 233)
+- REMOVED: `defer cancel()` (line 234)
+- CHANGED: All `streamCtx` references replaced with `ctx`
+- Result: Streaming now uses caller's context directly
+
+#### 2. internal/llm/client.go - ChatWithToolsStream (lines 289-470)
+- REMOVED: `streamCtx, cancel := context.WithTimeout(ctx, 120*time.Second)` (line 291)
+- REMOVED: `defer cancel()` (line 292)
+- CHANGED: All `streamCtx` references replaced with `ctx` throughout function
+- Result: Tool-calling stream uses caller's context directly
+
+#### 3. internal/orchestrator/orchestrator.go (line 139)
+- CHANGED: `cfg.JobTimeout = 45 * time.Second` → `cfg.JobTimeout = 5 * time.Minute`
+- Result: Default job timeout increased to 5 minutes
+
+#### 4. cmd/iris-bot/main.go (line 362)
+- CHANGED: `JobTimeout: 45 * time.Second` → `JobTimeout: 5 * time.Minute`
+- Result: Explicit wiring uses 5-minute timeout
+
+### Verification Results
+
+#### Build & Vet
+✓ go build ./... - SUCCESS
+✓ go vet ./... - SUCCESS
+
+#### Tests
+✓ go test -p 2 -count=1 ./... - ALL PASSED (36 packages)
+✓ TestChatStream_CtxCancelled_AbortsScannerWithinOneSecond - PASSED (10.00s)
+
+#### Docker Deployment
+✓ docker compose build bot - SUCCESS
+✓ docker compose up -d bot - SUCCESS
+✓ Container logs clean - NO ERRORS
+
+### Grep Verification - 120*time.Second Removed
+
+Searching for remaining 120*time.Second patterns in client.go:
+✓ No 120*time.Second found (as expected)
+
+### Test Output Tail
+ok  	github.com/eko/iris-bot/internal/reminder	0.005s
+ok  	github.com/eko/iris-bot/internal/repository	1.891s
+ok  	github.com/eko/iris-bot/internal/router	0.002s
+ok  	github.com/eko/iris-bot/internal/safety	0.014s
+ok  	github.com/eko/iris-bot/internal/settings	0.002s
+ok  	github.com/eko/iris-bot/internal/testutil	0.063s
+ok  	github.com/eko/iris-bot/internal/tools	0.198s
+ok  	github.com/eko/iris-bot/internal/tools/canoncheck	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/charlookup	0.003s
+ok  	github.com/eko/iris-bot/internal/tools/convsummary	0.003s
+ok  	github.com/eko/iris-bot/internal/tools/escalate	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/itemlookup	0.003s
+ok  	github.com/eko/iris-bot/internal/tools/memesearch	0.002s
+ok  	github.com/eko/iris-bot/internal/tools/patchnotes	0.003s
+ok  	github.com/eko/iris-bot/internal/tools/websearch	2.008s
+
+### Docker Logs Tail
+iris-bot  | {"time":"2026-05-12T07:01:47.04735213Z","level":"INFO","msg":"iris-bot starting"}
+iris-bot  | {"time":"2026-05-12T07:01:47.395717449Z","level":"INFO","msg":"context classifier backend=similarity","threshold":0.45}
+iris-bot  | {"time":"2026-05-12T07:01:47.395848211Z","level":"INFO","msg":"escalate tool registered"}
+iris-bot  | {"time":"2026-05-12T07:01:47.39587206Z","level":"INFO","msg":"websearch tool registered","provider":"searxng","base_url":"http://searxng:8080"}
+iris-bot  | {"time":"2026-05-12T07:01:47.395879947Z","level":"INFO","msg":"tools registered","count":2}
+iris-bot  | {"time":"2026-05-12T07:01:48.349796898Z","level":"INFO","msg":"Discord gateway connected"}
+iris-bot  | {"time":"2026-05-12T07:01:48.350060266Z","level":"INFO","msg":"auto-derived bot ID from session","botID":1503373336879566959}

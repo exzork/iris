@@ -1,0 +1,12 @@
+=== RUN   TestGuildRecallService_ReturnsNilWhenDisabled
+--- PASS: TestGuildRecallService_ReturnsNilWhenDisabled (0.00s)
+=== RUN   TestGuildRecallService_RejectsMissingGuild
+--- PASS: TestGuildRecallService_RejectsMissingGuild (0.00s)
+=== RUN   TestGuildRecallService_PassesThresholdAndTopK
+--- PASS: TestGuildRecallService_PassesThresholdAndTopK (0.00s)
+=== RUN   TestGuildRecallService_EmbedderFailureDegradesGracefully
+--- PASS: TestGuildRecallService_EmbedderFailureDegradesGracefully (0.00s)
+=== RUN   TestGuildRecallService_EmptyQueryReturnsNil
+--- PASS: TestGuildRecallService_EmptyQueryReturnsNil (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/memory	0.002s

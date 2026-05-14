@@ -1,0 +1,97 @@
+# Final Verification - Lore LLM No-Timeout & Model Configuration
+
+## Task Completion Status: ✓ COMPLETE
+
+### A. Config Changes ✓
+- [x] Added LoreLLMModel field to Config struct
+- [x] Parses IRIS_LORE_LLM_MODEL env var
+- [x] Falls back to cfg.LLMModelStrong when unset
+- [x] Validates model name using ValidateModelName()
+- [x] Added unit tests: LoreLLMModelUnset, LoreLLMModelSet
+
+### B. Zero-Timeout Implementation ✓
+- [x] classifier.go: Conditional WithTimeout (timeout > 0)
+- [x] summarizer.go: Conditional WithTimeout (timeout > 0)
+- [x] title.go: Conditional WithTimeout (timeout > 0)
+- [x] worker.go: initDefaults() allows 0 (changed <= to <)
+- [x] worker.go: generateTitleAndSummary() conditional timeout
+
+### C. Model Configuration ✓
+- [x] LoreClassifierAdapter uses cfg.LoreLLMModel
+- [x] LoreThreadLLMCallerAdapter (summarizer) uses cfg.LoreLLMModel
+- [x] LoreThreadLLMCallerAdapter (title) uses cfg.LoreLLMModel
+- [x] LLMCompactor uses cfg.LoreLLMModel
+
+### D. Docker & Environment ✓
+- [x] docker-compose.yml: Added IRIS_LORE_LLM_MODEL
+- [x] .env.example: Documented IRIS_LORE_LLM_MODEL
+- [x] .env: Set IRIS_LORE_LLM_TIMEOUT=0
+- [x] .env: Set IRIS_LORE_LLM_MODEL=kr/claude-opus-4.7
+- [x] .env backed up to .env.bak.2026-05-13b
+
+### E. Testing & Build ✓
+- [x] go test ./internal/config -count=1: PASS
+- [x] go test ./internal/lorethread -count=1: PASS
+- [x] go test ./... -count=1: PASS (all packages)
+- [x] go build ./...: SUCCESS
+
+### F. Docker Verification ✓
+- [x] docker compose up -d --force-recreate bot: SUCCESS
+- [x] IRIS_LORE_LLM_TIMEOUT=0 verified in container
+- [x] IRIS_LORE_LLM_MODEL=kr/claude-opus-4.7 verified in container
+- [x] lore_worker_started with llm_timeout="0s" in logs
+- [x] No errors in bot logs
+- [x] All containers running (bot, postgres, searxng)
+
+### G. Documentation ✓
+- [x] Appended to learnings.md: Zero-timeout semantics, implementation pattern, config fallback chain
+- [x] Appended to decisions.md: Rationale for all architectural choices
+- [x] Created comprehensive summary in .sisyphus/evidence/lore-no-timeout-summary.txt
+
+## Evidence Files Generated
+- .sisyphus/evidence/lore-no-timeout-recreate.txt: Docker compose recreation output
+- .sisyphus/evidence/lore-no-timeout-env.txt: Environment variables verification
+- .sisyphus/evidence/lore-no-timeout-logs.txt: Lore worker startup log
+- .sisyphus/evidence/lore-no-timeout-summary.txt: Comprehensive implementation summary
+- .sisyphus/evidence/FINAL-VERIFICATION.txt: This file
+
+## Key Behavior Changes
+
+1. **Timeout Semantics**
+   - 0 = no deadline (only parent ctx cancellation)
+   - > 0 = deadline with specified duration
+   - < 0 = invalid (substituted with default)
+
+2. **Model Selection**
+   - All lore LLM calls use IRIS_LORE_LLM_MODEL
+   - Defaults to LLM_MODEL_STRONG when unset
+   - Single source of truth for lore model configuration
+
+3. **Graceful Shutdown**
+   - Bot respects SIGTERM via root context cancellation
+   - Lore LLM calls interrupted on root ctx cancel
+   - No premature timeouts with IRIS_LORE_LLM_TIMEOUT=0
+
+## Files Modified (10 total)
+1. internal/config/config.go
+2. internal/config/config_test.go
+3. internal/lorethread/classifier.go
+4. internal/lorethread/summarizer.go
+5. internal/lorethread/title.go
+6. internal/lorethread/worker.go
+7. cmd/iris-bot/main.go
+8. docker-compose.yml
+9. .env.example
+10. .env (backed up to .env.bak.2026-05-13b)
+
+## Notepad Updates (2 files)
+1. .sisyphus/notepads/iris-lore-thread-protocol/learnings.md
+2. .sisyphus/notepads/iris-lore-thread-protocol/decisions.md
+
+## Status: READY FOR PRODUCTION
+- All tests pass
+- Build succeeds
+- Docker containers running
+- No errors in logs
+- Configuration verified
+- Graceful shutdown confirmed

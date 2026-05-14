@@ -1,0 +1,168 @@
+LORE ON-DEMAND THREAD FINALIZATION - IMPLEMENTATION SUMMARY
+===========================================================
+
+Date: 2026-05-14
+Status: COMPLETE ✓
+
+## FIX A: Capture Timeout Configuration
+Status: ALREADY IMPLEMENTED
+- Config field: LoreCaptureTimeout (time.Duration)
+- Parsing: internal/config/config.go lines 269-274
+- Default: 60 seconds
+- Special value: 0 = no deadline (uses context.Background())
+- Orchestrator usage: internal/orchestrator/orchestrator.go lines 377-381
+- Environment variable: IRIS_LORE_CAPTURE_TIMEOUT
+- Docker compose: Forwarded correctly with default 60s
+- Live value in container: 0 (no deadline, as configured in .env)
+
+## FIX B: On-Demand Thread Finalization
+
+### B.1 Repository Method
+File: internal/repository/lore_sessions.go
+- New method: GetOpenByChannelWithStarter(ctx, guildID, channelID)
+- Returns: (*Session, starterID int64, error)
+- Implementation: LEFT JOIN on channel_messages to fetch author_id
+- Handles race condition: Returns starterID=0 if first message not found
+- Caller treats 0 as "starter unknown, deny"
+
+### B.2 Finalizer Implementation
+File: internal/lorethread/force_finalize.go (NEW)
+- Type: Finalizer struct with all required dependencies
+- Method: ForceFinalize(ctx, guildID, channelID, requesterUserID)
+- Returns: (*ForceFinalizeResult, error)
+- Error types:
+  * ErrNoOpenSession: No open session in channel
+  * ErrNotConversationStarter: Requester != session starter
+- Pipeline: Same as worker.processSession
+  1. Fetch open session with starter
+  2. Authorize requester
+  3. Check guild settings
+  4. Check rate limit
+  5. Fetch parent message
+  6. Fetch recent messages
+  7. Filter to lore messages
+  8. Generate title + summary
+  9. Create thread
+  10. Store result + anchor
+  11. Emit metrics
+
+### B.3 Tool Registration
+File: internal/tools/lorethread/lore_finalize.go (NEW)
+- Tool name: lore_finalize_now
+- Schema: No arguments (guild/channel/requester from context)
+- Responses:
+  * Success: {thread_id, message_id, title, summary_preview}
+  * Error: {error, starter_user_id?, description}
+- Error codes:
+  * no_open_session
+  * not_starter
+  * internal_error
+  * finalization_failed
+
+### B.4 Persona Update
+File: internal/persona/persona.go
+- Version bumped: 1.7.0 → 1.8.0
+- New section: [LORE SESSION FINALIZATION]
+- Guidance:
+  * Tool lore_finalize_now available for early finalization
+  * ONLY conversation starter can call
+  * Non-starter refusal: "Hanya <@STARTER_ID> yang bisa tutup sesi ini"
+  * Honesty requirement: Never claim thread created if tool failed
+  * Intents: "tutup sesi lore", "buat threadnya sekarang", "summarize lore now"
+- Tests updated: TestPersonaVersion_1_8_0, TestPersona_OnDemandThreadGuidanceExists
+
+### B.5 Tool Wiring
+File: cmd/iris-bot/main.go
+- Import alias: lorethread_tool (to avoid shadowing package name)
+- Registration: Inside cfg.LoreThreadsEnabled block (lines 520-541)
+- Dependencies: All lore worker dependencies passed to Finalizer
+- Timeout: 30 seconds
+- Max output: 2048 bytes
+- Logging: "lore_finalize_now tool registered"
+
+## VERIFICATION RESULTS
+
+### Build & Tests
+✓ go build ./... - SUCCESS
+✓ go test ./internal/config ./internal/persona ./internal/orchestrator ./internal/lorethread ./internal/repository -count=1 - PASS
+✓ go test ./... -count=1 - PASS (all packages)
+
+### Docker Build
+✓ docker compose build bot - SUCCESS
+✓ Image: iris-bot:latest built successfully
+
+### Container Verification
+✓ docker compose up -d --force-recreate bot - SUCCESS
+✓ Bot started and initialized
+✓ lore_worker_started logged with poll_interval=30s, llm_timeout=0s
+✓ lore_finalize_now tool registered
+✓ All 12 tools registered: [mcp_remove, iris_reset_model, mcp_add, mcp_list, lore_finalize_now, mcp_bind_slash, mcp_unbind_slash, mcp_list_slash, iris_set_model, iris_get_models, escalate_to_strong_model, web_search]
+
+### Environment Variables
+✓ IRIS_LORE_LLM_MODEL=kr/claude-opus-4.7
+✓ IRIS_LORE_CAPTURE_TIMEOUT=0 (no deadline)
+
+## FILES MODIFIED
+
+1. internal/repository/lore_sessions.go
+   - Added GetOpenByChannelWithStarter method
+
+2. internal/lorethread/force_finalize.go (NEW)
+   - Finalizer struct and ForceFinalize method
+   - Error types: ErrNoOpenSession, ErrNotConversationStarter
+   - Helper methods: filterLoreMessages, generateTitleAndSummary
+
+3. internal/tools/lorethread/lore_finalize.go (NEW)
+   - Tool struct and Schema method
+   - Run method with context extraction
+   - Error/success response types
+
+4. internal/persona/persona.go
+   - Version: 1.7.0 → 1.8.0
+   - Added [LORE SESSION FINALIZATION] section
+
+5. internal/persona/persona_test.go
+   - Updated version expectations to 1.8.0
+   - Added TestPersona_OnDemandThreadGuidanceExists
+
+6. cmd/iris-bot/main.go
+   - Added import alias: lorethread_tool
+   - Added tool registration inside lore threads block
+
+7. docker-compose.yml
+   - Fixed indentation for IRIS_LORE_* variables
+
+8. .env
+   - Already had IRIS_LORE_CAPTURE_TIMEOUT=0
+
+9. .env.example
+   - Already had IRIS_LORE_CAPTURE_TIMEOUT documentation
+
+## BEHAVIOR CHANGES
+
+### Before
+- Capture timeout hard-coded to 3 seconds → classifier timeouts
+- No way to finalize lore session early
+- Any user could theoretically request thread creation (not implemented)
+
+### After
+- Capture timeout configurable, defaults to 60s, can be 0 for no deadline
+- Users can call lore_finalize_now to close session early
+- ONLY conversation starter can finalize (enforced at tool level)
+- Persona guides LLM to use tool correctly and refuse non-starters
+- Honesty requirement: Never pretend to create thread if tool fails
+
+## SECURITY NOTES
+
+✓ Authorization gate: starterID check in Finalizer.ForceFinalize
+✓ Error handling: Structured responses prevent information leakage
+✓ Rate limiting: Reuses existing guild-level limiter
+✓ No new external dependencies
+✓ No schema migrations needed (uses existing channel_messages.user_id)
+
+## NEXT STEPS (if needed)
+
+- Monitor logs for lore_finalize_now usage patterns
+- Verify persona honesty in production (no false thread claims)
+- Consider adding metrics for on-demand vs worker-driven finalizations
+- Test with non-starter users to verify refusal behavior

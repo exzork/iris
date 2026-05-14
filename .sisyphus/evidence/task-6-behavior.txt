@@ -1,0 +1,12 @@
+=== RUN   TestBehaviorProfileService_RejectsMissingGuildOrUser
+--- PASS: TestBehaviorProfileService_RejectsMissingGuildOrUser (0.00s)
+=== RUN   TestBehaviorProfileService_ProducesNonSensitiveHints
+--- PASS: TestBehaviorProfileService_ProducesNonSensitiveHints (0.00s)
+=== RUN   TestBehaviorProfileService_DropsSensitiveSamples
+--- PASS: TestBehaviorProfileService_DropsSensitiveSamples (0.00s)
+=== RUN   TestBehaviorProfileService_IgnoresBotMessagesAndEmpty
+--- PASS: TestBehaviorProfileService_IgnoresBotMessagesAndEmpty (0.00s)
+=== RUN   TestBehaviorProfileService_ProfileIsGuildUserIsolated
+--- PASS: TestBehaviorProfileService_ProfileIsGuildUserIsolated (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/memory	0.002s

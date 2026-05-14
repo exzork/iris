@@ -1,0 +1,126 @@
+time="2026-05-11T11:15:34Z" level=warning msg="The \"POSTGRES_USER\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"POSTGRES_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"POSTGRES_DB\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"POSTGRES_DB\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"POSTGRES_USER\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"POSTGRES_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"POSTGRES_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"OPENAI_API_KEY\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"POSTGRES_USER\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"POSTGRES_DB\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="The \"DISCORD_TOKEN\" variable is not set. Defaulting to a blank string."
+time="2026-05-11T11:15:34Z" level=warning msg="/home/eko/iris/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+name: iris
+services:
+  bot:
+    build:
+      context: /home/eko/iris
+      dockerfile: Dockerfile
+    container_name: iris-bot
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: "536870912"
+    environment:
+      DATABASE_URL: ""
+      DISCORD_TOKEN: ""
+      LLM_BASE_URL: https://api.openai.com
+      LLM_MAX_RETRIES: "3"
+      LLM_MAX_TOKENS: "2048"
+      LLM_MODEL: gpt-4
+      LLM_RETRY_DELAY: 1s
+      LLM_TEMPERATURE: "0.7"
+      LLM_TIMEOUT: 30s
+      OPENAI_API_KEY: ""
+      POSTGRES_DB: ""
+      POSTGRES_HOST: postgres
+      POSTGRES_PASSWORD: ""
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ""
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pgrep iris-bot || exit 1
+      timeout: 10s
+      interval: 30s
+      retries: 3
+      start_period: 10s
+    networks:
+      iris-network: null
+    restart: unless-stopped
+  migrate:
+    command:
+      - sh
+      - -c
+      - |-
+        until pg_isready -h postgres -U $${POSTGRES_USER} -d $${POSTGRES_DB}; do sleep 1; done &&
+               psql -h postgres -U $${POSTGRES_USER} -d $${POSTGRES_DB} -f /migrations/001_init.sql
+    container_name: iris-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+    environment:
+      POSTGRES_DB: ""
+      POSTGRES_HOST: postgres
+      POSTGRES_PASSWORD: ""
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ""
+    image: pgvector/pgvector:pg16
+    networks:
+      iris-network: null
+    restart: "no"
+    volumes:
+      - type: bind
+        source: /home/eko/iris/migrations
+        target: /migrations
+        bind: {}
+  postgres:
+    container_name: iris-postgres
+    environment:
+      POSTGRES_DB: ""
+      POSTGRES_PASSWORD: ""
+      POSTGRES_USER: ""
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      timeout: 5s
+      interval: 10s
+      retries: 5
+      start_period: 10s
+    image: pgvector/pgvector:pg16
+    networks:
+      iris-network: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 5432
+        published: "5432"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: postgres_data
+        target: /var/lib/postgresql/data
+        volume: {}
+      - type: bind
+        source: /home/eko/iris/migrations
+        target: /docker-entrypoint-initdb.d
+        bind: {}
+networks:
+  iris-network:
+    name: iris_iris-network
+    driver: bridge
+volumes:
+  postgres_data:
+    name: iris_postgres_data

@@ -1,0 +1,29 @@
+=== RUN   TestAllowedChannelRepo
+=== RUN   TestAllowedChannelRepo/Add_and_IsAllowed
+--- PASS: TestAllowedChannelRepo/Add_and_IsAllowed (0.00s)
+=== RUN   TestAllowedChannelRepo/IsAllowed_returns_false_for_non-allowed_channel
+--- PASS: TestAllowedChannelRepo/IsAllowed_returns_false_for_non-allowed_channel (0.00s)
+=== RUN   TestAllowedChannelRepo/HasAny_distinguishes_empty_from_denied_state
+--- PASS: TestAllowedChannelRepo/HasAny_distinguishes_empty_from_denied_state (0.00s)
+=== RUN   TestAllowedChannelRepo/ListByGuild
+--- PASS: TestAllowedChannelRepo/ListByGuild (0.00s)
+=== RUN   TestAllowedChannelRepo/Remove
+--- PASS: TestAllowedChannelRepo/Remove (0.00s)
+--- PASS: TestAllowedChannelRepo (0.07s)
+PASS
+ok  	github.com/eko/iris-bot/internal/repository	0.250s
+
+AllowedChannelRepo test results:
+✓ Add and IsAllowed: Successfully adds allowed channel and IsAllowed returns true
+✓ IsAllowed returns false for non-allowed channel: Correctly distinguishes allowed vs non-allowed
+✓ HasAny distinguishes empty from denied state: 
+  - Empty state (no rows): HasAny returns false
+  - After first row added: HasAny returns true
+  - This allows router to distinguish between "no configuration" (fallback mode) and "configured" (enforce mode)
+✓ ListByGuild: Returns all allowed channels for a guild
+✓ Remove: Successfully removes allowed channel and IsAllowed returns false
+
+Key behavior verified:
+- Empty allow-list state (HasAny=false) is distinguishable from denied state (HasAny=true + IsAllowed=false)
+- This enables safe migration: fallback to exception_channels until first allowed_channels row exists
+- Once any allowed channel is configured, the router switches to include-list enforcement

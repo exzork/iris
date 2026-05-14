@@ -1,0 +1,103 @@
+ Image iris-bot Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 462B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.21kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-bookworm
+#3 ...
+
+#4 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#4 DONE 1.5s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-bookworm
+#3 DONE 1.6s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [runtime 1/8] FROM docker.io/library/debian:bookworm-slim@sha256:67b30a61dc87758f0caf819646104f29ecbda97d920aaf5edc834128ac8493d3
+#6 resolve docker.io/library/debian:bookworm-slim@sha256:67b30a61dc87758f0caf819646104f29ecbda97d920aaf5edc834128ac8493d3 0.0s done
+#6 DONE 0.0s
+
+#7 [build  1/11] FROM docker.io/library/golang:1.26-bookworm@sha256:252599aeb51ad60b83e4d8821802068127c528c707cb7dd7afd93be057c6011c
+#7 resolve docker.io/library/golang:1.26-bookworm@sha256:252599aeb51ad60b83e4d8821802068127c528c707cb7dd7afd93be057c6011c 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 36.37MB 0.1s done
+#8 DONE 0.2s
+
+#9 [build  4/11] COPY vendor/libs/libonnxruntime.so* /usr/local/lib/
+#9 CACHED
+
+#10 [build  7/11] RUN ldconfig
+#10 CACHED
+
+#11 [build  2/11] WORKDIR /src
+#11 CACHED
+
+#12 [build  3/11] RUN apt-get update && apt-get install -y --no-install-recommends     ca-certificates     build-essential     && rm -rf /var/lib/apt/lists/*
+#12 CACHED
+
+#13 [build  6/11] RUN mkdir -p /usr/local/include/onnxruntime
+#13 CACHED
+
+#14 [build  5/11] COPY vendor/libs/libtokenizers.a /usr/local/lib/
+#14 CACHED
+
+#15 [build  8/11] COPY go.mod go.sum ./
+#15 CACHED
+
+#16 [build  9/11] RUN go mod download
+#16 CACHED
+
+#17 [build 10/11] COPY . .
+#17 DONE 0.4s
+
+#18 [build 11/11] RUN CGO_ENABLED=1 GOOS=linux go build -trimpath -tags cgo -mod=mod -o /out/iris-bot ./cmd/iris-bot
+#18 DONE 15.7s
+
+#19 [runtime 2/8] WORKDIR /app
+#19 CACHED
+
+#20 [runtime 3/8] RUN apt-get update && apt-get install -y --no-install-recommends     ca-certificates     tzdata     curl     gnupg     python3     python3-pip     python3-venv     pipx     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash -     && apt-get install -y --no-install-recommends nodejs     && npm install -g npm@latest     && pip3 install --no-cache-dir --break-system-packages uv     && apt-get purge -y --auto-remove curl gnupg     && rm -rf /var/lib/apt/lists/*
+#20 CACHED
+
+#21 [runtime 4/8] COPY --from=build /usr/local/lib/libonnxruntime.so* /usr/local/lib/
+#21 CACHED
+
+#22 [runtime 5/8] COPY --from=build /out/iris-bot /usr/local/bin/iris-bot
+#22 DONE 0.2s
+
+#23 [runtime 6/8] RUN ldconfig
+#23 0.277 ldconfig: /usr/local/lib/libonnxruntime.so.1 is not a symbolic link
+#23 0.277 
+#23 DONE 0.3s
+
+#24 [runtime 7/8] RUN groupadd --system --gid 1000 app && useradd --system --uid 1000 --gid 1000 --create-home app
+#24 0.258 useradd warning: app's uid 1000 is greater than SYS_UID_MAX 999
+#24 DONE 0.3s
+
+#25 [runtime 8/8] RUN mkdir -p /app/config /opt/iris-models /home/app/.npm /home/app/.cache/uv     && chown -R app:app /app /opt/iris-models /home/app
+#25 DONE 0.3s
+
+#26 exporting to image
+#26 exporting layers
+#26 exporting layers 1.2s done
+#26 exporting manifest sha256:62bdf2deb92d733262b3babcc761f8e23b7fd2b4801ca75b40b14461e5147544 done
+#26 exporting config sha256:3c99cec7fb0acca7973502c90fca34e86d93787df4a09ca0f785e03acccc965b done
+#26 exporting attestation manifest sha256:e5e5aaf9087d9204d351884fb39b35735f03e4a3a6ed774d8cb0beb876d14de6 done
+#26 exporting manifest list sha256:69cd5346408bcbceee7a253e715dfb76ed02daa76e68c128fa350105d1778740 done
+#26 naming to docker.io/library/iris-bot:latest done
+#26 unpacking to docker.io/library/iris-bot:latest
+#26 unpacking to docker.io/library/iris-bot:latest 0.2s done
+#26 DONE 1.5s
+
+#27 resolving provenance for metadata file
+#27 DONE 0.0s
+ Image iris-bot Built 

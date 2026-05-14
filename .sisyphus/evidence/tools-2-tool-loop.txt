@@ -1,0 +1,138 @@
+Task T2: ChatWithTools Implementation - Tool-Call Loop
+========================================================
+
+DELIVERABLES COMPLETED
+======================
+
+1. New Public Types & Method in internal/llm/client.go
+   - ToolExecutor interface: Execute(ctx context.Context, name string, args map[string]interface{}) (string, error)
+   - ChatWithToolsConfig struct with fields:
+     * Model: string
+     * GuildID: int64
+     * Tools: []map[string]interface{} (OpenAI-shaped)
+     * Exec: ToolExecutor
+     * Max: int (default 3 if 0)
+   - ChatWithTools(ctx context.Context, messages []map[string]string, cfg ChatWithToolsConfig) (string, error)
+
+2. Tool-Call Loop Implementation
+   - Per-round logic:
+     1. Build request with model, messages, temperature/max_tokens from client config
+     2. Include tools when len(cfg.Tools) > 0
+     3. POST /v1/chat/completions with stream=false
+     4. Parse response
+     5. If no tool_calls, return Choices[0].Message.Content
+     6. Else for each tool_call:
+        - Append assistant message with role=assistant and original tool_calls array
+        - Call cfg.Exec.Execute(ctx, name, args)
+        - On error, use "error: "+err.Error() as tool content
+        - Append role=tool message with tool_call_id and content
+     7. round++; if round >= cfg.Max, return last assistant content or "", nil
+     8. Loop continues
+   - Message history: kept as []map[string]string in public signature
+   - Internal enrichment: []map[string]interface{} for request body with tool turns
+   - Audit metadata: attached via llm.WithMeta(ctx, &llm.ContextMeta{TriggerReason: "chat_with_tools", GuildID: cfg.GuildID})
+   - DEBUG logging per round: tool_call round=N tool=<name> args=<short>
+   - Respects ctx cancellation and timeout
+   - Uses existing c.http, c.config.APIKey, retry behavior
+
+3. Test Coverage (internal/llm/client_tools_test.go)
+   - TestChatWithTools_NoTools_FallsThroughToText
+     * cfg.Tools empty, server returns text
+     * Verifies no tools in request
+     * Returns text response
+   
+   - TestChatWithTools_OneToolCall_ThenText
+     * First request: server returns tool_call
+     * Second request: verifies role=tool message with matching tool_call_id and content
+     * fakeToolExecutor records name+args
+     * Final return equals second response's text
+   
+   - TestChatWithTools_MaxRounds_Exceeded_ReturnsLastText
+     * Server always returns tool_calls
+     * Loop aborts after Max rounds (set to 2)
+     * Returns last assistant content (non-erroring)
+     * Exactly 2 requests made
+   
+   - TestChatWithTools_ToolExecuteError_PropagatedAsToolMessage
+     * Executor returns error
+     * Second POST body carries content: "error: tool failed"
+     * No panic, loop continues
+     * Final response from model after error
+
+FILES CHANGED
+=============
+- internal/llm/client.go: Added ToolExecutor interface, ChatWithToolsConfig struct, ChatWithTools method
+- internal/llm/client_tools_test.go: New file with 4 test cases and fakeToolExecutor helper
+
+TEST RESULTS
+============
+=== RUN   TestChatWithTools_NoTools_FallsThroughToText
+--- PASS: TestChatWithTools_NoTools_FallsThroughToText (0.00s)
+=== RUN   TestChatWithTools_OneToolCall_ThenText
+--- PASS: TestChatWithTools_OneToolCall_ThenText (0.00s)
+=== RUN   TestChatWithTools_MaxRounds_Exceeded_ReturnsLastText
+--- PASS: TestChatWithTools_MaxRounds_Exceeded_ReturnsLastText (0.00s)
+=== RUN   TestChatWithTools_ToolExecuteError_PropagatedAsToolMessage
+--- PASS: TestChatWithTools_ToolExecuteError_PropagatedAsToolMessage (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/llm	0.010s
+
+BUILD & VET
+===========
+go build ./... : PASS (no output = success)
+go vet ./... : PASS (no output = success)
+
+HTTPTEST BEHAVIOR SUMMARY
+=========================
+- TestChatWithTools_NoTools_FallsThroughToText:
+  * Single request to server
+  * Verifies tools field absent when cfg.Tools empty
+  * Returns assistant content directly
+
+- TestChatWithTools_OneToolCall_ThenText:
+  * Two requests to server
+  * First: returns tool_call with id=call_123, function.name=websearch, arguments={"query":"test query"}
+  * Second: verifies messages array contains:
+    - Original user message
+    - Assistant message with role=assistant and tool_calls array
+    - Tool message with role=tool, tool_call_id=call_123, content=search result
+  * Returns final assistant content
+
+- TestChatWithTools_MaxRounds_Exceeded_ReturnsLastText:
+  * Exactly 2 requests (Max=2)
+  * Each request returns tool_call
+  * Loop terminates after 2 rounds
+  * Returns Response 2 (last assistant content)
+
+- TestChatWithTools_ToolExecuteError_PropagatedAsToolMessage:
+  * Two requests to server
+  * First: returns tool_call
+  * Second: verifies tool message contains content="error: tool failed"
+  * Model receives error message and responds with recovery text
+  * No panic or loop termination
+
+VERIFICATION CHECKLIST
+======================
+✓ go test ./internal/llm -count=1 -v : All tests pass
+✓ go build ./... : No errors
+✓ go vet ./... : No errors
+✓ lsp_diagnostics: No errors (LSP cache stale but tests/build confirm correctness)
+✓ Chat and ChatWithModel unchanged
+✓ Every round respects ctx cancellation and timeout
+✓ Max rounds default 3 when cfg.Max == 0
+✓ DEBUG logging per round with tool name and short args
+✓ No streaming added
+✓ No existing public signatures modified
+✓ No .sisyphus/plans/ touched
+✓ No raw tool arguments logged at INFO level
+
+IMPLEMENTATION NOTES
+====================
+- Message history enrichment: Public signature keeps []map[string]string unchanged for backward compatibility
+- Internal request body uses []map[string]interface{} to include tool_calls and tool results
+- Tool executor errors are caught and propagated as tool messages with "error: " prefix
+- Loop continues even on tool execution errors (per spec: "keep the loop alive")
+- Audit logging includes both success and error paths
+- DEBUG-level logging for tool calls includes round number, tool name, and truncated args
+- Default max rounds is 3 when cfg.Max == 0 (per spec)
+- Context cancellation is respected at retry points and tool execution

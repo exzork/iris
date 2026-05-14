@@ -1,0 +1,5 @@
+=== RUN   TestCheckSupportedClaim
+    verifier_test.go:68: Supported Verdict: Status=supported, Confidence=1.00, Citations=2, Reason=Klaim didukung oleh sumber yang terindeks.
+--- PASS: TestCheckSupportedClaim (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/tools/canoncheck	0.002s

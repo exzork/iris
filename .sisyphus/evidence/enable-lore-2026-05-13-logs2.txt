@@ -1,0 +1,1 @@
+iris-bot  | {"time":"2026-05-13T23:44:25.161178631Z","level":"INFO","msg":"lore_worker_started","poll_interval":"30s","llm_timeout":"30s"}

@@ -1,0 +1,16 @@
+=== RUN   TestMemoryPromoter_StoreTrue_CallsWriter
+--- PASS: TestMemoryPromoter_StoreTrue_CallsWriter (0.00s)
+=== RUN   TestMemoryPromoter_StoreFalse_DoesNotCallWriter
+--- PASS: TestMemoryPromoter_StoreFalse_DoesNotCallWriter (0.08s)
+=== RUN   TestMemoryPromoter_SafetyReject_DoesNotCallWriter
+--- PASS: TestMemoryPromoter_SafetyReject_DoesNotCallWriter (0.08s)
+=== RUN   TestMemoryPromoter_AsyncNonBlocking
+--- PASS: TestMemoryPromoter_AsyncNonBlocking (0.20s)
+=== RUN   TestMemoryPromoter_JSONParseError_Silent
+--- PASS: TestMemoryPromoter_JSONParseError_Silent (0.08s)
+=== RUN   TestMemoryPromoter_SummaryTruncatedTo500Runes
+--- PASS: TestMemoryPromoter_SummaryTruncatedTo500Runes (0.00s)
+=== RUN   TestMemoryPromoterHookCalledWhenConfigured
+--- PASS: TestMemoryPromoterHookCalledWhenConfigured (0.01s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.454s

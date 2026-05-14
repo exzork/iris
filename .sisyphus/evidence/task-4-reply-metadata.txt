@@ -1,0 +1,4 @@
+=== RUN   TestNormalizeMessageCreateWithReplyMetadata
+--- PASS: TestNormalizeMessageCreateWithReplyMetadata (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/discord	0.004s

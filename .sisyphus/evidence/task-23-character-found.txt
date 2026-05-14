@@ -1,0 +1,19 @@
+Task 23: Character Lookup - Character Found Scenario
+=====================================================
+
+Test: TestToolRunCharacterFound
+Preconditions: Fixture character "Rover" indexed with alias "protagonist"
+Steps: 1. Run character lookup for alias "protagonist" 2. Inspect response
+Expected Result: Indonesian summary with citation URL
+
+Response:
+{"citations":[],"element":"Spectro","found":true,"name":"Rover","rarity":"5-Star","summary":"Rover adalah karakter utama dalam Wuthering Waves, seorang pejuang misterius dengan kekuatan Spectro.","weapon":"Sword"}
+
+Verification:
+✓ found=true
+✓ name="Rover"
+✓ element="Spectro"
+✓ weapon="Sword"
+✓ rarity="5-Star"
+✓ summary contains Indonesian text
+✓ JSON structure valid

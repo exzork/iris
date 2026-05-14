@@ -1,0 +1,14 @@
+Remaining time.Sleep calls in orchestrator tests (all legitimate, not assertion-based):
+
+Line 352: time.Sleep(50 * time.Millisecond) - in LLM.ChatFn simulation (TestConcurrentProcessing)
+Line 461: time.Sleep(5 * time.Millisecond) - in waitUntil helper polling loop (not an assertion)
+Line 869: time.Sleep(100 * time.Millisecond) - in LLM.ChatFn simulation (TestImmediateTypingBeforeLLM)
+Line 908: time.Sleep(300 * time.Millisecond) - in LLM.ChatFn simulation (TestDelayedTypingWhenDisabled)
+Line 1454: time.Sleep(200 * time.Millisecond) - in TestE2E_ConversationSlidingWindow (waiting for irrelevant message to be ignored)
+
+All assertion-based time.Sleep calls have been replaced with:
+- waitUntil() helper with channel-based conditions
+- select on refreshedCh with timeout
+- select on context.Done() for blocking operations
+
+BLOCKER 2 COMPLETE: All sleep-based assertions replaced with event-driven waits.

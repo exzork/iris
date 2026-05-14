@@ -1,0 +1,50 @@
+
+#14 [build  5/11] COPY vendor/libs/libtokenizers.a /usr/local/lib/
+#14 CACHED
+
+#15 [build  6/11] RUN mkdir -p /usr/local/include/onnxruntime
+#15 CACHED
+
+#16 [build  9/11] RUN go mod download
+#16 CACHED
+
+#17 [build 10/11] COPY . .
+#17 DONE 0.4s
+
+#18 [build 11/11] RUN CGO_ENABLED=1 GOOS=linux go build -trimpath -tags cgo -mod=mod -o /out/iris-bot ./cmd/iris-bot
+#18 DONE 18.0s
+
+#19 [runtime 6/8] RUN ldconfig
+#19 CACHED
+
+#20 [runtime 7/8] RUN addgroup --system app && adduser --system --group app
+#20 CACHED
+
+#21 [runtime 4/8] COPY --from=build /usr/local/lib/libonnxruntime.so* /usr/local/lib/
+#21 CACHED
+
+#22 [runtime 5/8] COPY --from=build /out/iris-bot /usr/local/bin/iris-bot
+#22 CACHED
+
+#23 [runtime 2/8] WORKDIR /app
+#23 CACHED
+
+#24 [runtime 3/8] RUN apt-get update && apt-get install -y --no-install-recommends     ca-certificates     tzdata     && rm -rf /var/lib/apt/lists/*
+#24 CACHED
+
+#25 [runtime 8/8] RUN mkdir -p /opt/iris-models && chown -R app:app /opt/iris-models
+#25 CACHED
+
+#26 exporting to image
+#26 exporting layers done
+#26 exporting manifest sha256:d11405412663937bb1082f3d627af06843117f4288e3ab7105db601814fb76ea done
+#26 exporting config sha256:f456d32f383aa12f5bb965e72b92bfc70e1e082666d626fa640532f7a1cdc3fd done
+#26 exporting attestation manifest sha256:a9fd7c85357cd574a5c4a83ae6d43b9e9c714e99fd30670bc33a2871500b95f1 0.0s done
+#26 exporting manifest list sha256:9fa9a08a01d500ec02f7a1ad98633b81da9aaae00588aa80fe56cab48266aeb8 done
+#26 naming to docker.io/library/iris-bot:latest done
+#26 unpacking to docker.io/library/iris-bot:latest done
+#26 DONE 0.1s
+
+#27 resolving provenance for metadata file
+#27 DONE 0.0s
+ Image iris-bot Built 

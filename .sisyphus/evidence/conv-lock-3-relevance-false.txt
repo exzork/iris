@@ -1,0 +1,43 @@
+CONV-LOCK T3: In-Window Relevance Classifier - FALSE Case Evidence
+==================================================================
+
+Test: TestInWindowRelevance_FalseExplicit
+Status: PASS
+
+Scenario:
+- Event: User message "random off-topic" in channel 100
+- Context: Prior bot message "here is some info" from iris
+- LLM Response: {"in_context": false, "reason": "off-topic message"}
+
+Expected Behavior:
+- IsRelevant() returns (false, nil)
+- Message is classified as NOT relevant to ongoing conversation
+
+Actual Result:
+✓ PASS - Message correctly identified as off-topic
+
+JSON Schema Used:
+{
+  "in_context": bool,
+  "reason": string
+}
+
+System Prompt:
+"You are a relevance classifier for Discord conversations. 
+Determine if the current message is relevant to the ongoing conversation context.
+Reply with STRICT JSON: {"in_context": bool, "reason": string}"
+
+Context Format (from context_builder.go pattern):
+[<channel_id> · <user_label> · <timestamp>] <content>
+
+Example context passed to LLM:
+[100 · iris · 2026-05-12T00:08:47Z] here is some info
+
+[100 · user:42 · 2026-05-12T00:09:47Z] random off-topic
+
+Fallback Behavior:
+- Parse errors → (false, error)
+- Timeout errors → (false, error)
+- Empty context → (false, nil) without LLM call
+
+Timestamp: 2026-05-12T00:09:53Z

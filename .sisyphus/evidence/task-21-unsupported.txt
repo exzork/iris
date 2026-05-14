@@ -1,0 +1,5 @@
+=== RUN   TestCheckUnsupportedClaim
+    verifier_test.go:104: Unsupported Verdict: Status=unsupported, Confidence=0.00, Reason=Belum ada sumber yang terindeks mendukung klaim ini.
+--- PASS: TestCheckUnsupportedClaim (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/tools/canoncheck	0.002s

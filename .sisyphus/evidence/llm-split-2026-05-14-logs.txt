@@ -1,0 +1,1 @@
+iris-bot  | {"time":"2026-05-14T03:53:11.008699952Z","level":"INFO","msg":"llm_clients_ready","chat_timeout":"2m0s","tool_timeout":"10m0s"}

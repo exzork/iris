@@ -1,0 +1,31 @@
+=== docker compose build bot (tail) ===
+#26 exporting config sha256:29118ea2bf30f4ebbd6aff9f64db08329e295cc00b9250c74d370310bbfcdf7d done
+#26 exporting attestation manifest sha256:b850ba4e784906f8b1e7bb65bf6b8fd407ca5ac897d05a1338fd87dcb92b20ef 0.0s done
+#26 exporting manifest list sha256:f225977c366239eddfc06507c4413bacf2513b06fd940733377ab3235d874f0a done
+#26 naming to docker.io/library/iris-bot:latest done
+#26 unpacking to docker.io/library/iris-bot:latest done
+#26 DONE 0.1s
+
+#27 resolving provenance for metadata file
+#27 DONE 0.0s
+ Image iris-bot Built 
+
+=== docker compose up -d bot ===
+ Container iris-postgres Waiting 
+ Container iris-postgres Healthy 
+ Container iris-migrate Starting 
+ Container iris-migrate Started 
+ Container iris-postgres Waiting 
+ Container iris-migrate Waiting 
+ Container iris-migrate Exited 
+ Container iris-postgres Healthy 
+ Container iris-bot Starting 
+ Container iris-bot Started 
+
+=== docker compose logs --tail=20 bot ===
+iris-bot  | {"time":"2026-05-12T03:48:03.761007706Z","level":"INFO","msg":"iris-bot starting"}
+iris-bot  | {"time":"2026-05-12T03:48:03.761007706Z","level":"INFO","msg":"iris-bot starting"}
+iris-bot  | {"time":"2026-05-12T03:48:04.039366804Z","level":"INFO","msg":"context classifier backend=similarity","threshold":0.55}
+iris-bot  | {"time":"2026-05-12T03:48:04.039511592Z","level":"WARN","msg":"websearch tool not registered","reason":"SEARCH_BASE_URL or SEARCH_API_KEY unset"}
+iris-bot  | {"time":"2026-05-12T03:48:04.954955465Z","level":"INFO","msg":"Discord gateway connected"}
+iris-bot  | {"time":"2026-05-12T03:48:04.955099067Z","level":"INFO","msg":"auto-derived bot ID from session","botID":1503373336879566959}

@@ -1,0 +1,4 @@
+=== RUN   TestCaptureIgnoredMessages
+--- PASS: TestCaptureIgnoredMessages (0.01s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.013s

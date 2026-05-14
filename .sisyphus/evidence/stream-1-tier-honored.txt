@@ -1,0 +1,42 @@
+# T1 TIER HONORED - Evidence
+
+## Test Output
+=== RUN   TestHandle_NonToolsPath_UsesTierModel
+2026/05/12 04:42:06 INFO router_decision reason=mention should=true
+2026/05/12 04:42:06 INFO llm_request model=kr/claude-haiku-4.5
+2026/05/12 04:42:06 INFO response_chunks n=1
+--- PASS: TestHandle_NonToolsPath_UsesTierModel (0.01s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	0.010s
+
+## Full Test Suite Results
+All tests passed:
+- github.com/eko/iris-bot/cmd/iris-bot: PASS (1.354s)
+- github.com/eko/iris-bot/internal/orchestrator: PASS (2.948s) - includes new TestHandle_NonToolsPath_UsesTierModel
+- All 33 packages: PASS
+
+## Build Status
+- go build ./...: SUCCESS
+- go vet ./...: SUCCESS
+- CGO_ENABLED=0 go build -o /tmp/iris-bot-test ./cmd/iris-bot: SUCCESS
+- docker compose build bot: SUCCESS
+
+## Docker Deployment
+- docker compose up -d bot: SUCCESS
+- Bot started and connected to Discord gateway
+- Logs show: "Discord gateway connected"
+
+## Key Changes
+1. Extended LLMCaller interface with ChatWithModel method
+2. Updated LLMCallerAdapter to implement ChatWithModel
+3. Updated FakeLLMClient to track LastModelUsed and implement ChatWithModel
+4. Modified orchestrator.go line 393 to use ChatWithModel when modelToUse != "unknown"
+5. Updated .env: LLM_MODEL_DEFAULT=kr/claude-haiku-4.5 (was sonnet-4.5)
+6. Updated .env.example: LLM_MODEL_DEFAULT=kr/claude-haiku-4.5 (was sonnet-4.5)
+7. Added TestHandle_NonToolsPath_UsesTierModel test that verifies tier model is used in non-tools path
+
+## Verification
+✓ Test shows llm_request model=kr/claude-haiku-4.5 (tier-chosen model)
+✓ Non-tools path now respects tier classification
+✓ Fallback to Chat() when modelToUse == "unknown"
+✓ All existing tests remain green

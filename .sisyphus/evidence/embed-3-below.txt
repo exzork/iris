@@ -1,0 +1,14 @@
+=== RUN   TestInWindowRelevance_TrueInContext
+--- PASS: TestInWindowRelevance_TrueInContext (0.00s)
+=== RUN   TestInWindowRelevance_FalseExplicit
+--- PASS: TestInWindowRelevance_FalseExplicit (0.00s)
+=== RUN   TestInWindowRelevance_ParseError_ReturnsFalseErr
+--- PASS: TestInWindowRelevance_ParseError_ReturnsFalseErr (0.00s)
+=== RUN   TestInWindowRelevance_Timeout_ReturnsFalseErr
+--- PASS: TestInWindowRelevance_Timeout_ReturnsFalseErr (0.01s)
+=== RUN   TestInWindowRelevance_EmptyContext_SkipsLLM
+--- PASS: TestInWindowRelevance_EmptyContext_SkipsLLM (0.00s)
+=== RUN   TestInWindowRelevance_AttachesTriggerReason
+--- PASS: TestInWindowRelevance_AttachesTriggerReason (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	1.028s

@@ -1,0 +1,57 @@
+=== LORE THREAD PROTOCOL ENABLEMENT SUMMARY ===
+Date: 2026-05-13
+Time: 23:44:54Z
+
+TASK COMPLETION STATUS:
+✓ docker-compose.yml updated with 6 lore environment variables
+✓ Bot container recreated with force-recreate
+✓ Environment variables verified inside container
+✓ lore_worker_started confirmed in logs
+✓ Per-guild flag set in postgres lore_guild_settings
+✓ Guild row verified in database
+
+DETAILED FINDINGS:
+
+1. ENV PROPAGATION:
+   Status: OK
+   Variables forwarded to bot container:
+   - IRIS_LORE_THREADS_ENABLED=true
+   - IRIS_LORE_IDLE_DURATION=5m
+   - IRIS_LORE_COMPACTION_TARGET=0.70
+   - IRIS_LORE_THREAD_CAP_PER_HOUR=6
+   - IRIS_LORE_WORKER_POLL_INTERVAL=30s
+   - IRIS_LORE_LLM_TIMEOUT=30s
+
+2. LORE WORKER STATUS:
+   Log Entry: {"time":"2026-05-13T23:44:25.161178631Z","level":"INFO","msg":"lore_worker_started","poll_interval":"30s","llm_timeout":"30s"}
+   Status: STARTED
+   Poll Interval: 30s
+   LLM Timeout: 30s
+
+3. GUILD SETTINGS:
+   Guild ID: 761163966030151701
+   Enabled: t (true)
+   Thread Cap Per Hour: 6
+   Status: VERIFIED
+
+4. CONTAINER INFO:
+   Container ID: iris-bot
+   Image Hash: a95727d26bc9
+   Status: Up 52 seconds
+   Image Size: 174MB
+
+5. CODE FIX APPLIED:
+   Issue: Nil pointer dereference at line 451 (gateway.Session() called before connect)
+   Fix: Removed lines 451-452 that attempted to get botID from unconnected gateway session
+   Result: Bot now uses pre-initialized botID from line 276
+   Status: RESOLVED
+
+VERIFICATION COMMANDS EXECUTED:
+✓ docker compose up -d --force-recreate bot
+✓ docker compose exec -T bot env | grep -i LORE
+✓ docker compose logs --tail=400 bot | grep lore_worker_started
+✓ docker compose exec -T postgres psql -U iris_user -d iris -c "INSERT INTO lore_guild_settings..."
+✓ docker compose exec -T postgres psql -U iris_user -d iris -c "SELECT guild_id, enabled, thread_cap_per_hour FROM lore_guild_settings WHERE guild_id=761163966030151701"
+
+CONCLUSION:
+Lore thread protocol is now fully enabled and operational. The bot container has all required environment variables, the lore worker has started successfully, and the per-guild settings have been configured for guild 761163966030151701.

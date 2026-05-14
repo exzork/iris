@@ -1,0 +1,4 @@
+=== RUN   TestPlaywrightLookupUnavailableWhenExecMissing
+--- PASS: TestPlaywrightLookupUnavailableWhenExecMissing (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/lore/browser	0.003s

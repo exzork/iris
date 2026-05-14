@@ -1,0 +1,11 @@
+=== go test -v (guard) ===
+=== RUN   TestMemoryPackage_DoesNotDependOnOpenAISDK
+--- PASS: TestMemoryPackage_DoesNotDependOnOpenAISDK (0.08s)
+PASS
+ok  	github.com/eko/iris-bot/internal/memory	(cached)
+
+=== go list -deps ./internal/memory | grep -iE 'openai|sashabaranov' (expect empty) ===
+(no matches: memory package has zero OpenAI SDK deps)
+
+=== go.mod OpenAI SDK presence (expect empty) ===
+(go.mod/go.sum contain no openai-go or sashabaranov entries)

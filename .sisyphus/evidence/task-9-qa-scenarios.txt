@@ -1,0 +1,26 @@
+=== RUN   TestQAScenario_MentionTrigger
+    router_qa_test.go:34: ✓ QA Mention: Bot responds to direct mention with reason="mention"
+--- PASS: TestQAScenario_MentionTrigger (0.00s)
+=== RUN   TestQAScenario_ReplyTrigger
+    router_qa_test.go:61: ✓ QA Reply: Bot responds to reply-to-bot with reason="reply"
+--- PASS: TestQAScenario_ReplyTrigger (0.00s)
+=== RUN   TestQAScenario_IrisNameMention
+    router_qa_test.go:88: ✓ QA Iris Name: Bot responds to 'iris' name mention with reason="name_mention"
+--- PASS: TestQAScenario_IrisNameMention (0.00s)
+=== RUN   TestQAScenario_ExceptionChannelDenylist
+    router_qa_test.go:117: ✓ QA Exception Channel: Bot ignores mention in exception channel with reason="exception_channel"
+--- PASS: TestQAScenario_ExceptionChannelDenylist (0.00s)
+=== RUN   TestQAScenario_BotSelfMessage
+    router_qa_test.go:144: ✓ QA Bot Self Message: Bot ignores own messages with reason="bot_message"
+--- PASS: TestQAScenario_BotSelfMessage (0.00s)
+=== RUN   TestQAScenario_NoTrigger
+    router_qa_test.go:171: ✓ QA No Trigger: Bot ignores non-trigger messages with reason="no_trigger"
+--- PASS: TestQAScenario_NoTrigger (0.00s)
+=== RUN   TestQAScenario_ExceptionChannelSuppressionPriority
+    router_qa_test.go:204: ✓ QA Exception Priority: Exception channel suppresses mention with reason="exception_channel"
+--- PASS: TestQAScenario_ExceptionChannelSuppressionPriority (0.00s)
+=== RUN   TestQAScenario_CaseInsensitiveIris
+    router_qa_test.go:240: ✓ QA Case Insensitive: Bot responds to case-insensitive 'iris' mentions
+--- PASS: TestQAScenario_CaseInsensitiveIris (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/router	0.004s

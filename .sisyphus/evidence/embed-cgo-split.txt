@@ -1,0 +1,34 @@
+=== CGO-OFF BUILD AND TEST EVIDENCE ===
+Date: 2026-05-12
+
+1. CGO_ENABLED=0 go build -o /tmp/iris-bot-test ./cmd/iris-bot
+   Status: SUCCESS
+   Binary: /tmp/iris-bot-test (17M, statically linked ELF 64-bit)
+
+2. go test -p 2 -count=1 ./cmd/iris-bot
+   Status: PASS
+   Output: ok  	github.com/eko/iris-bot/cmd/iris-bot	0.493s
+   Tests: TestBuildBinary, TestCheckConfigFlag, TestMissingConfigFails all pass
+
+3. go build ./... (default tags, CGO on)
+   Status: SUCCESS
+   Contains real ONNX implementation from embedder_onnx.go
+
+4. go test -race -count=1 ./internal/embedder (CGO on)
+   Status: PASS
+   Output: ok  	github.com/eko/iris-bot/internal/embedder	1.021s
+   Tests: FakeEmbedder + helper functions
+
+5. CGO_ENABLED=0 go test -count=1 ./internal/embedder
+   Status: PASS
+   Output: ok  	github.com/eko/iris-bot/internal/embedder	0.007s
+   Tests: Unit tests pass with stub NewONNX (not exercised)
+
+6. go test -tags embed_real -count=1 ./internal/embedder -run 'TestONNX'
+   Status: PASS
+   Output: ok  	github.com/eko/iris-bot/internal/embedder	0.979s
+   Tests: Integration tests with real ONNX backend
+
+7. go test -p 2 -count=1 ./...
+   Status: PASS
+   All 32 packages pass

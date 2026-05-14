@@ -1,0 +1,20 @@
+=== RUN   TestServerMemoryE2E_UserBehaviorHintsReachLLM
+2026/05/12 10:13:14 INFO router_decision reason=mention should=true
+2026/05/12 10:13:14 INFO llm_request model=unknown
+2026/05/12 10:13:14 INFO response_chunks n=1
+2026/05/12 10:13:14 INFO typing_stopped guild=12345 channel=67890
+--- PASS: TestServerMemoryE2E_UserBehaviorHintsReachLLM (0.50s)
+=== RUN   TestServerMemoryE2E_CrossUserBehaviorIsolation
+2026/05/12 10:13:14 INFO router_decision reason=mention should=true
+2026/05/12 10:13:14 INFO llm_request model=unknown
+2026/05/12 10:13:14 INFO response_chunks n=1
+2026/05/12 10:13:14 INFO typing_stopped guild=12345 channel=67890
+--- PASS: TestServerMemoryE2E_CrossUserBehaviorIsolation (0.50s)
+=== RUN   TestServerMemoryE2E_DMsExcluded
+2026/05/12 10:13:15 INFO router_decision reason=mention should=true
+2026/05/12 10:13:15 INFO llm_request model=unknown
+2026/05/12 10:13:15 INFO response_chunks n=1
+2026/05/12 10:13:15 INFO typing_stopped guild=0 channel=0
+--- PASS: TestServerMemoryE2E_DMsExcluded (0.50s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	1.508s

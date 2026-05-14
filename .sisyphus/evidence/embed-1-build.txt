@@ -1,0 +1,99 @@
+# T1 Build Evidence
+
+## go.mod Dependencies
+
+github.com/yalue/onnxruntime_go v1.16.0
+github.com/daulet/tokenizers v1.27.0
+
+## Build Output
+
+$ go mod tidy
+(no output - success)
+
+$ go build ./...
+(no output - success)
+
+$ go vet ./...
+(no output - success)
+
+## Test Results
+
+### Unit Tests (embedder_test.go)
+$ go test -race -count=1 ./internal/embedder -v
+
+=== RUN   TestFakeEmbedderDeterministic
+--- PASS: TestFakeEmbedderDeterministic (0.00s)
+=== RUN   TestFakeEmbedderDim
+--- PASS: TestFakeEmbedderDim (0.00s)
+=== RUN   TestFakeEmbedderUnitNorm
+--- PASS: TestFakeEmbedderUnitNorm (0.00s)
+=== RUN   TestMeanPoolingWithMask
+--- PASS: TestMeanPoolingWithMask (0.00s)
+=== RUN   TestMeanPoolingAllMasked
+--- PASS: TestMeanPoolingAllMasked (0.00s)
+=== RUN   TestL2Normalize_UnitNorm
+--- PASS: TestL2Normalize_UnitNorm (0.00s)
+=== RUN   TestL2Normalize_ZeroVector
+--- PASS: TestL2Normalize_ZeroVector (0.00s)
+=== RUN   TestCosine_Identity_IsOne
+--- PASS: TestCosine_Identity_IsOne (0.00s)
+=== RUN   TestCosine_Orthogonal_IsZero
+--- PASS: TestCosine_Orthogonal_IsZero (0.00s)
+=== RUN   TestCosine_Opposite_IsNegativeOne
+--- PASS: TestCosine_Opposite_IsNegativeOne (0.00s)
+=== RUN   TestFakeEmbedderClose
+--- PASS: TestFakeEmbedderClose (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/embedder	1.012s
+
+### Integration Tests (embedder_onnx_test.go with embed_real tag)
+$ go test -tags embed_real -count=1 ./internal/embedder -v
+
+=== RUN   TestONNXIntegration_Dim384
+--- PASS: TestONNXIntegration_Dim384 (0.38s)
+=== RUN   TestONNXIntegration_ParaphraseHigherThanUnrelated
+--- PASS: TestONNXIntegration_ParaphraseHigherThanUnrelated (0.55s)
+=== RUN   TestONNXIntegration_Concurrent_RaceFree
+--- PASS: TestONNXIntegration_Concurrent_RaceFree (2.13s)
+=== RUN   TestFakeEmbedderDeterministic
+--- PASS: TestFakeEmbedderDeterministic (0.00s)
+=== RUN   TestFakeEmbedderDim
+--- PASS: TestFakeEmbedderDim (0.00s)
+=== RUN   TestFakeEmbedderUnitNorm
+--- PASS: TestFakeEmbedderUnitNorm (0.00s)
+=== RUN   TestMeanPoolingWithMask
+--- PASS: TestMeanPoolingWithMask (0.00s)
+=== RUN   TestMeanPoolingAllMasked
+--- PASS: TestMeanPoolingAllMasked (0.00s)
+=== RUN   TestL2Normalize_UnitNorm
+--- PASS: TestL2Normalize_UnitNorm (0.00s)
+=== RUN   TestL2Normalize_ZeroVector
+--- PASS: TestL2Normalize_ZeroVector (0.00s)
+=== RUN   TestCosine_Identity_IsOne
+--- PASS: TestCosine_Identity_IsOne (0.00s)
+=== RUN   TestCosine_Orthogonal_IsZero
+--- PASS: TestCosine_Orthogonal_IsZero (0.00s)
+=== RUN   TestCosine_Opposite_IsNegativeOne
+--- PASS: TestCosine_Opposite_IsNegativeOne (0.00s)
+=== RUN   TestFakeEmbedderClose
+--- PASS: TestFakeEmbedderClose (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/embedder	3.094s
+
+## LSP Diagnostics
+
+Directory: /home/eko/iris/internal/embedder
+Extension: .go
+Files scanned: 3
+Files with errors: 0
+Total diagnostics: 0
+
+## Summary
+
+✓ All 11 unit tests PASS with race detector
+✓ All 3 integration tests PASS (real model inference)
+✓ Build: SUCCESS
+✓ Vet: SUCCESS
+✓ LSP: CLEAN
+
+Total test time: ~4.1 seconds

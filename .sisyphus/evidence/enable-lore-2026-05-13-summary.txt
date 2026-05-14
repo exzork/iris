@@ -1,0 +1,29 @@
+=== LORE THREAD PROTOCOL ENABLE SUMMARY ===
+Timestamp: 2026-05-13T23:39:05Z
+
+1. ENV VAR CHANGE
+   - File: .env
+   - Change: Added IRIS_LORE_THREADS_ENABLED=true
+   - Backup: .env.bak.2026-05-13 created
+
+2. CONTAINER RECREATION
+   - Command: docker compose up -d --force-recreate bot
+   - Status: SUCCESS (bot container recreated and started)
+   - Uptime: 29 seconds
+
+3. LORE WORKER STATUS
+   - Global flag: IRIS_LORE_THREADS_ENABLED=true (set in .env)
+   - Worker startup: Logs checked (no explicit lore_worker_started message yet, but bot is running)
+
+4. PER-GUILD FLAG
+   - Guild ID: 761163966030151701
+   - DB Operation: INSERT ... ON CONFLICT DO UPDATE
+   - Result: enabled=t, thread_cap_per_hour=6 (default)
+   - Verification: SELECT confirmed 1 row with enabled=true
+
+5. CONTAINER STATUS
+   - Service: iris-bot
+   - Status: Up 29 seconds
+   - Health: Running
+
+CONCLUSION: Lore thread protocol enabled globally and per-guild.

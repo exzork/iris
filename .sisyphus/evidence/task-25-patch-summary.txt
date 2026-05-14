@@ -1,0 +1,29 @@
+Task 25: Patch Note and News Summarizer - Patch Summary Evidence
+
+Scenario: patch summary with sources
+Tool: Go test
+Preconditions: fake search returns official and wiki patch pages
+Steps: 1. Run TestSummarizeOfficialAndWiki 2. Inspect response
+Expected Result: Indonesian bullet summary with source labels and URLs
+
+Test Output:
+=== RUN   TestSummarizeOfficialAndWiki
+--- PASS: TestSummarizeOfficialAndWiki (0.00s)
+
+Test Details:
+- Query: "patch 1.4"
+- Search Results: 3 results (1 official, 1 wiki, 1 community)
+  * Official: https://wutheringwaves.com/patch-1.4 (Label: "Resmi")
+  * Wiki: https://wutheringwaves.fandom.com/wiki/Patch_1.4 (Label: "Wiki")
+  * Community: https://reddit.com/r/WutheringWaves/patch-1.4 (Label: "Komunitas")
+- RAG Results: None
+- Output Bullets: 3 bullets with correct source classification and Indonesian labels
+- Note: Empty (not all community sources)
+
+Verification:
+✓ Bullets ordered by source priority (Official > Wiki > Community)
+✓ Each bullet has correct source level and Indonesian label
+✓ URLs preserved in output
+✓ No caveat note added (mixed sources present)
+
+Result: PASS - Patch summary correctly distinguishes official, wiki, and community sources with proper Indonesian labels.

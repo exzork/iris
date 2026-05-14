@@ -1,0 +1,28 @@
+=== IRIS BOT DEPLOY SUMMARY ===
+Timestamp: 2026-05-14T00:05:44Z
+Task: Rebuild and recreate bot with lore model (kr/claude-opus-4.7) + no-timeout (0s)
+
+BUILD:
+  Image Hash: sha256:c99b9fa99567771ab577d80b2e0d6e1d1a096f43f9578345c736f1f8105d2f48
+  Status: ✓ SUCCESS
+
+CONTAINER:
+  Status: Up 44 seconds
+  Service: bot (iris-bot)
+
+STARTUP VERIFICATION:
+  ✓ mcp supervisor ready (path=/app/config/mcps.json)
+  ✓ lore_worker_started poll_interval=30s llm_timeout=0s
+  ✓ No panic/FATAL errors
+
+ENV VARS:
+  ✓ IRIS_LORE_LLM_MODEL=kr/claude-opus-4.7
+  ✓ IRIS_LORE_LLM_TIMEOUT=0
+  ✓ IRIS_LORE_THREADS_ENABLED=true
+  ✓ IRIS_LORE_WORKER_POLL_INTERVAL=30s
+
+DATABASE STATE:
+  ✓ Allow-list row: guild_id=761163966030151701, channel_id=1504020311496986715 (re-inserted)
+  ✓ Guild settings: guild_id=761163966030151701, enabled=t (re-inserted)
+
+RESULT: ✓ DEPLOYMENT SUCCESSFUL

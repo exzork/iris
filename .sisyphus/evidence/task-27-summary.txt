@@ -1,0 +1,21 @@
+=== Task 27: Conversation Summarizer - Summary Test Evidence ===
+
+Test: TestSummarizeChannelMessages
+Status: PASS
+
+Description:
+- Fetches 3 messages from history (one contains sk-test-1234567890abcdefghij secret)
+- Redacts messages before sending to LLM
+- Fake LLM returns "- Pembahasan A\n- Pembahasan B"
+- Verifies Summary contains:
+  * Non-empty text from LLM
+  * Count=3 (correct message count)
+  * From/To timestamps set correctly
+  * LLM was called with redacted prompt (secret NOT exposed)
+  * Prompt contains [REDACTED_TOKEN] marker instead of raw secret
+
+Key Assertion:
+- LLM prompt does NOT contain "sk-test-1234567890abcdefghij" (unredacted secret)
+- LLM prompt DOES contain "[REDACTED_TOKEN]" (redacted marker)
+
+Result: PASS - Secrets are properly redacted before LLM processing

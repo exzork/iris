@@ -1,0 +1,281 @@
+ok  	github.com/eko/iris-bot/internal/lorethread	1.036s
+2026/05/13 14:53:21 INFO router_decision reason=mention should=true
+2026/05/13 14:53:21 INFO llm_request model=unknown
+2026/05/13 14:53:21 INFO response_chunks n=1
+2026/05/13 14:53:21 INFO typing_stopped guild=12345 channel=67890
+2026/05/13 14:53:22 INFO router_decision reason=mention should=true
+2026/05/13 14:53:22 INFO llm_request model=unknown
+2026/05/13 14:53:22 INFO response_chunks n=1
+2026/05/13 14:53:22 INFO typing_stopped guild=12345 channel=67890
+2026/05/13 14:53:22 INFO router_decision reason=mention should=true
+2026/05/13 14:53:22 INFO llm_request model=unknown
+2026/05/13 14:53:22 INFO response_chunks n=1
+2026/05/13 14:53:22 INFO typing_stopped guild=12345 channel=67890
+2026/05/13 14:53:23 INFO router_decision reason=mention should=true
+2026/05/13 14:53:23 INFO llm_request model=unknown
+2026/05/13 14:53:23 INFO response_chunks n=1
+2026/05/13 14:53:23 INFO typing_stopped guild=12345 channel=67890
+2026/05/13 14:53:23 INFO router_decision reason=mention should=true
+2026/05/13 14:53:23 INFO llm_request model=unknown
+2026/05/13 14:53:23 INFO response_chunks n=1
+2026/05/13 14:53:23 INFO typing_stopped guild=0 channel=0
+2026/05/13 14:53:24 INFO router_decision reason=mention should=true
+2026/05/13 14:53:24 INFO typing_started guild=1 channel=1 reason=llm_request
+2026/05/13 14:53:24 INFO llm_request model=unknown
+2026/05/13 14:53:24 INFO response_chunks n=1
+==================
+WARNING: DATA RACE
+Write at 0x00c0001302c0 by goroutine 27:
+  github.com/eko/iris-bot/internal/orchestrator.(*fakeSendRecorder).SendMessage()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:49 +0xec
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).handle()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:587 +0x2979
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).worker()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:312 +0xd7
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start.gowrap1()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x2e
+
+Previous read at 0x00c0001302c0 by goroutine 26:
+  github.com/eko/iris-bot/internal/orchestrator.TestE2EDebugAuditAndContext.func2()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:126 +0x30
+  github.com/eko/iris-bot/internal/orchestrator.waitUntil()
+      /home/eko/iris/internal/orchestrator/orchestrator_test.go:386 +0x8d
+  github.com/eko/iris-bot/internal/orchestrator.TestE2EDebugAuditAndContext()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:125 +0xe0e
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+
+Goroutine 27 (running) created at:
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x115
+  github.com/eko/iris-bot/internal/orchestrator.TestE2EDebugAuditAndContext()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:104 +0x969
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+
+Goroutine 26 (running) created at:
+  testing.(*T).Run()
+      /snap/go/11127/src/testing/testing.go:2101 +0xb12
+  testing.runTests.func1()
+      /snap/go/11127/src/testing/testing.go:2585 +0x85
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.runTests()
+      /snap/go/11127/src/testing/testing.go:2583 +0x9e9
+  testing.(*M).Run()
+      /snap/go/11127/src/testing/testing.go:2443 +0xf4b
+  main.main()
+      _testmain.go:370 +0x164
+==================
+2026/05/13 14:53:24 INFO typing_stopped guild=1 channel=1
+==================
+WARNING: DATA RACE
+Read at 0x00c000118470 by goroutine 26:
+  github.com/eko/iris-bot/internal/orchestrator.TestE2EDebugAuditAndContext()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:133 +0xef9
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+
+Previous write at 0x00c000118470 by goroutine 27:
+  github.com/eko/iris-bot/internal/orchestrator.(*fakeSendRecorder).SendMessage()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:49 +0x9c
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).handle()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:587 +0x2979
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).worker()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:312 +0xd7
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start.gowrap1()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x2e
+
+Goroutine 26 (running) created at:
+  testing.(*T).Run()
+      /snap/go/11127/src/testing/testing.go:2101 +0xb12
+  testing.runTests.func1()
+      /snap/go/11127/src/testing/testing.go:2585 +0x85
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.runTests()
+      /snap/go/11127/src/testing/testing.go:2583 +0x9e9
+  testing.(*M).Run()
+      /snap/go/11127/src/testing/testing.go:2443 +0xf4b
+  main.main()
+      _testmain.go:370 +0x164
+
+Goroutine 27 (running) created at:
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x115
+  github.com/eko/iris-bot/internal/orchestrator.TestE2EDebugAuditAndContext()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:104 +0x969
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+==================
+==================
+WARNING: DATA RACE
+Read at 0x00c0001302d8 by goroutine 26:
+  github.com/eko/iris-bot/internal/orchestrator.TestE2EDebugAuditAndContext()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:139 +0xf90
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+
+Previous write at 0x00c0001302d8 by goroutine 27:
+  github.com/eko/iris-bot/internal/orchestrator.(*fakeSendRecorder).SendTyping()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:54 +0x49
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).startTyping()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:640 +0x32f
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).handle()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:453 +0x1edc
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).worker()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:312 +0xd7
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start.gowrap1()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x2e
+
+Goroutine 26 (running) created at:
+  testing.(*T).Run()
+      /snap/go/11127/src/testing/testing.go:2101 +0xb12
+  testing.runTests.func1()
+      /snap/go/11127/src/testing/testing.go:2585 +0x85
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.runTests()
+      /snap/go/11127/src/testing/testing.go:2583 +0x9e9
+  testing.(*M).Run()
+      /snap/go/11127/src/testing/testing.go:2443 +0xf4b
+  main.main()
+      _testmain.go:370 +0x164
+
+Goroutine 27 (running) created at:
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x115
+  github.com/eko/iris-bot/internal/orchestrator.TestE2EDebugAuditAndContext()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:104 +0x969
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+==================
+--- FAIL: TestE2EDebugAuditAndContext (0.11s)
+    testing.go:1712: race detected during execution of test
+2026/05/13 14:53:24 INFO router_decision reason=active_conversation should=true
+2026/05/13 14:53:24 INFO conv_lock_similarity guild=1 channel=1 sim=1.0000029802322388 threshold=0.55 decision=true
+2026/05/13 14:53:24 INFO typing_started guild=1 channel=1 reason=llm_request
+2026/05/13 14:53:24 INFO llm_request model=unknown
+2026/05/13 14:53:24 INFO response_chunks n=1
+==================
+WARNING: DATA RACE
+Write at 0x00c000036220 by goroutine 30:
+  github.com/eko/iris-bot/internal/orchestrator.(*fakeSendRecorder).SendMessage()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:49 +0xec
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).handle()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:587 +0x2979
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).worker()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:312 +0xd7
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start.gowrap1()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x2e
+
+Previous read at 0x00c000036220 by goroutine 29:
+  github.com/eko/iris-bot/internal/orchestrator.TestE2ESimilarityInWindowRelevance.func1()
+      /home/eko/iris/internal/orchestrator/orchestrator_sim_e2e_test.go:180 +0x30
+  github.com/eko/iris-bot/internal/orchestrator.waitUntil()
+      /home/eko/iris/internal/orchestrator/orchestrator_test.go:386 +0x8d
+  github.com/eko/iris-bot/internal/orchestrator.TestE2ESimilarityInWindowRelevance()
+      /home/eko/iris/internal/orchestrator/orchestrator_sim_e2e_test.go:179 +0x1094
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+
+Goroutine 30 (running) created at:
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x115
+  github.com/eko/iris-bot/internal/orchestrator.TestE2ESimilarityInWindowRelevance()
+      /home/eko/iris/internal/orchestrator/orchestrator_sim_e2e_test.go:158 +0xc08
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+
+Goroutine 29 (running) created at:
+  testing.(*T).Run()
+      /snap/go/11127/src/testing/testing.go:2101 +0xb12
+  testing.runTests.func1()
+      /snap/go/11127/src/testing/testing.go:2585 +0x85
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.runTests()
+      /snap/go/11127/src/testing/testing.go:2583 +0x9e9
+  testing.(*M).Run()
+      /snap/go/11127/src/testing/testing.go:2443 +0xf4b
+  main.main()
+      _testmain.go:370 +0x164
+==================
+2026/05/13 14:53:24 INFO typing_stopped guild=1 channel=1
+2026/05/13 14:53:24 INFO router_decision reason=active_conversation should=true
+2026/05/13 14:53:24 INFO conv_lock_similarity guild=1 channel=1 sim=1.0000029802322388 threshold=0.55 decision=true
+2026/05/13 14:53:24 INFO typing_started guild=1 channel=1 reason=llm_request
+2026/05/13 14:53:24 INFO llm_request model=unknown
+2026/05/13 14:53:24 INFO response_chunks n=1
+==================
+WARNING: DATA RACE
+Write at 0x00c000036220 by goroutine 30:
+  github.com/eko/iris-bot/internal/orchestrator.(*fakeSendRecorder).SendMessage()
+      /home/eko/iris/internal/orchestrator/orchestrator_e2e_test.go:49 +0xec
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).handle()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:587 +0x2979
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).worker()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:312 +0xd7
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start.gowrap1()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x2e
+
+Previous read at 0x00c000036220 by goroutine 29:
+  github.com/eko/iris-bot/internal/orchestrator.TestE2ESimilarityInWindowRelevance.func2()
+      /home/eko/iris/internal/orchestrator/orchestrator_sim_e2e_test.go:208 +0x35
+  github.com/eko/iris-bot/internal/orchestrator.waitUntil()
+      /home/eko/iris/internal/orchestrator/orchestrator_test.go:386 +0x8d
+  github.com/eko/iris-bot/internal/orchestrator.TestE2ESimilarityInWindowRelevance()
+      /home/eko/iris/internal/orchestrator/orchestrator_sim_e2e_test.go:207 +0x157d
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+
+Goroutine 30 (running) created at:
+  github.com/eko/iris-bot/internal/orchestrator.(*Orchestrator).Start()
+      /home/eko/iris/internal/orchestrator/orchestrator.go:223 +0x115
+  github.com/eko/iris-bot/internal/orchestrator.TestE2ESimilarityInWindowRelevance()
+      /home/eko/iris/internal/orchestrator/orchestrator_sim_e2e_test.go:158 +0xc08
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.(*T).Run.gowrap1()
+      /snap/go/11127/src/testing/testing.go:2101 +0x38
+
+Goroutine 29 (running) created at:
+  testing.(*T).Run()
+      /snap/go/11127/src/testing/testing.go:2101 +0xb12
+  testing.runTests.func1()
+      /snap/go/11127/src/testing/testing.go:2585 +0x85
+  testing.tRunner()
+      /snap/go/11127/src/testing/testing.go:2036 +0x21c
+  testing.runTests()
+      /snap/go/11127/src/testing/testing.go:2583 +0x9e9
+  testing.(*M).Run()
+      /snap/go/11127/src/testing/testing.go:2443 +0xf4b
+  main.main()
+      _testmain.go:370 +0x164
+==================
+2026/05/13 14:53:24 INFO typing_stopped guild=1 channel=1
+2026/05/13 14:53:24 INFO router_decision reason=active_conversation should=true
+2026/05/13 14:53:24 INFO conv_lock_similarity guild=1 channel=1 sim=-1.0000029802322388 threshold=0.55 decision=false
+--- FAIL: TestE2ESimilarityInWindowRelevance (0.51s)
+    testing.go:1712: race detected during execution of test
+FAIL
+FAIL	github.com/eko/iris-bot/internal/orchestrator	3.145s
+FAIL

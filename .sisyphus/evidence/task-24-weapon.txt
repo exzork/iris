@@ -1,0 +1,34 @@
+Task 24: Weapon Lookup Test Evidence
+=====================================
+
+Test: TestToolRunWeaponFound
+Status: PASS
+
+Scenario: weapon lookup found
+Tool: item_lookup
+Preconditions: fixture weapon "Emerald of Genesis" indexed
+Steps: 1. Run item lookup with name="Emerald of Genesis" 2. Inspect response
+
+Expected Result: response includes category "weapon" and citation
+
+Actual Result:
+{
+  "status": "found",
+  "items": [
+    {
+      "category": "weapon",
+      "name": "Emerald of Genesis",
+      "page_url": "https://wuthering-waves.fandom.com/wiki/Emerald_of_Genesis",
+      "rarity": "5-star",
+      "summary": "A powerful weapon for Jianxian"
+    }
+  ],
+  "message": "**Emerald of Genesis** (weapon, 5-star)\nA powerful weapon for Jianxian\n[Sumber](https://wuthering-waves.fandom.com/wiki/Emerald_of_Genesis)"
+}
+
+Verification:
+✓ status = "found"
+✓ items[0].category = "weapon"
+✓ page_url contains citation: https://wuthering-waves.fandom.com/wiki/Emerald_of_Genesis
+✓ message formatted with category, rarity, and source link
+✓ Indonesian label "Sumber" (Source) present in markdown link

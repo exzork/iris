@@ -1,0 +1,8 @@
+=== RUN   TestONNXEmbedder_CloseIdempotent
+--- PASS: TestONNXEmbedder_CloseIdempotent (0.16s)
+=== RUN   TestONNXEmbedder_EmbedAfterCloseReturnsError
+--- PASS: TestONNXEmbedder_EmbedAfterCloseReturnsError (0.13s)
+=== RUN   TestFakeEmbedderClose
+--- PASS: TestFakeEmbedderClose (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/embedder	0.302s

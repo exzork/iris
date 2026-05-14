@@ -1,0 +1,6 @@
+=== RUN   TestServerMemoryStartup_DimensionMismatch
+--- PASS: TestServerMemoryStartup_DimensionMismatch (0.00s)
+=== RUN   TestServerMemoryStartup_ColumnDimensionMismatch
+--- PASS: TestServerMemoryStartup_ColumnDimensionMismatch (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/memory	0.007s

@@ -1,0 +1,14 @@
+=== RUN   TestGuildIsolation
+--- PASS: TestGuildIsolation (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/settings	0.002s
+
+Test Scenario: Guild Isolation
+Preconditions: guild A disables memes (memes_enabled=false), guild B enables memes (memes_enabled=true)
+Steps:
+  1. Set guild A memes_enabled to "false"
+  2. Set guild B memes_enabled to "true"
+  3. Query GetBool for guild A with fallback true
+  4. Query GetBool for guild B with fallback true
+Expected Result: A returns false, B returns true
+Actual Result: PASS - Guild settings are properly isolated; each guild maintains independent configuration

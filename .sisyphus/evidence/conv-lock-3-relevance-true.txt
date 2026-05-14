@@ -1,0 +1,38 @@
+CONV-LOCK T3: In-Window Relevance Classifier - TRUE Case Evidence
+================================================================
+
+Test: TestInWindowRelevance_TrueInContext
+Status: PASS
+
+Scenario:
+- Event: User message "what about that?" in channel 100
+- Context: Prior bot message "here is some info" from iris
+- LLM Response: {"in_context": true, "reason": "message continues the conversation"}
+
+Expected Behavior:
+- IsRelevant() returns (true, nil)
+- Message is classified as relevant to ongoing conversation
+
+Actual Result:
+✓ PASS - Message correctly identified as in-context
+
+JSON Schema Used:
+{
+  "in_context": bool,
+  "reason": string
+}
+
+System Prompt:
+"You are a relevance classifier for Discord conversations. 
+Determine if the current message is relevant to the ongoing conversation context.
+Reply with STRICT JSON: {"in_context": bool, "reason": string}"
+
+Context Format (from context_builder.go pattern):
+[<channel_id> · <user_label> · <timestamp>] <content>
+
+Example context passed to LLM:
+[100 · iris · 2026-05-12T00:08:47Z] here is some info
+
+[100 · user:42 · 2026-05-12T00:09:47Z] what about that?
+
+Timestamp: 2026-05-12T00:09:47Z

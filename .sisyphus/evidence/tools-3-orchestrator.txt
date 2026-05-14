@@ -1,0 +1,17 @@
+# T3 Orchestrator Tests Output
+
+## Tool-Calling Tests
+
+=== RUN   TestHandle_UsesToolsLLMWhenConfigured
+--- PASS: TestHandle_UsesToolsLLMWhenConfigured (0.01s)
+
+=== RUN   TestHandle_FallsBackToPlainLLMWhenNoTools
+--- PASS: TestHandle_FallsBackToPlainLLMWhenNoTools (0.01s)
+
+## Summary
+
+Both new tests pass:
+- TestHandle_UsesToolsLLMWhenConfigured: Verifies that when ToolsLLM is configured with non-empty Tools slice, the orchestrator calls ChatWithTools instead of plain Chat.
+- TestHandle_FallsBackToPlainLLMWhenNoTools: Verifies that when Tools is nil/empty, the orchestrator falls back to plain Chat even if ToolsLLM is configured.
+
+All 48 orchestrator tests pass (2.933s total).

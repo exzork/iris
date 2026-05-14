@@ -1,0 +1,209 @@
+================================================================================
+PLAN COMPLIANCE AUDIT - PERSISTENT SERVER MEMORY
+================================================================================
+Date: 2026-05-12
+Task: Fix 4 plan compliance violations
+Plan: .sisyphus/plans/persistent-server-memory.md
+Notepad: .sisyphus/notepads/persistent-server-memory/
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+All 4 plan compliance violations are ALREADY SATISFIED by the current codebase.
+No code changes were required. The implementation correctly enforces all safety
+and architectural constraints.
+
+Status: ✓ COMPLIANT (0 violations found, 0 fixes applied)
+
+================================================================================
+VIOLATION AUDIT RESULTS
+================================================================================
+
+V1: Memory/Behavior Role = "user" (NOT "system")
+─────────────────────────────────────────────────
+Status: ✓ COMPLIANT
+
+File: internal/orchestrator/context_builder.go
+- Line 181: Memory block role = "user" ✓
+- Line 187: Behavior block role = "user" ✓
+- Line 102: System prompt role = "system" (correct, not memory/behavior) ✓
+
+Tests Passing:
+- TestContextBuilder_MemoryNotSystemInstruction ✓
+- TestContextBuilder_BehaviorNotSystemInstruction ✓
+- TestContextBuilder_MemoryAndBehaviorNeverSystemRole ✓
+
+Verification:
+All tests assert that UNTRUSTED SERVER MEMORY and USER INTERACTION HINTS blocks
+must have role="user" and can never have role="system" or role="developer".
+
+Key Finding: Memory and behavior blocks are correctly emitted as user-role
+context, not system instructions. This prevents prompt injection attacks where
+retrieved content could override system instructions.
+
+
+V2: No Sync Embed in Capture Hot Path
+──────────────────────────────────────
+Status: ✓ COMPLIANT
+
+File: internal/app/wire/adapters.go
+- ChannelCaptureAdapter struct (lines 206-209): NO Embedder field ✓
+- Capture method (lines 211-226): Only calls a.Repo.Upsert(ctx, msg) ✓
+- No sync embedding call ✓
+- Comment confirms: "Capture message with NULL embedding; async worker will backfill embeddings" ✓
+
+Wiring: cmd/iris-bot/main.go
+- Line 221-224: baseCapture created without Embedder ✓
+- Line 226-247: Async embedding worker properly wired separately ✓
+- Line 242-247: captureChain wraps baseCapture with enqueueIfMissingCapture ✓
+
+Architecture:
+1. baseCapture.Capture() → Repo.Upsert() with NULL embedding (fast, non-blocking)
+2. enqueueIfMissingCapture → NewNonBlockingCaptureAdapter(embeddingQueue) (async)
+3. EmbeddingWorker processes queue asynchronously
+
+Key Finding: Capture is fast and non-blocking. Embedding happens async via
+queue, preventing Discord event handler slowdown.
+
+
+V3: Wire BehaviorProfileService.UpdateFromSamples at Runtime
+─────────────────────────────────────────────────────────────
+Status: ✓ COMPLIANT
+
+File: internal/orchestrator/orchestrator.go
+- Line 56-58: BehaviorUpdater interface defined ✓
+  type BehaviorUpdater interface {
+    UpdateFromMessage(ctx context.Context, guildID, userID int64, content string, createdAt time.Time) error
+  }
+- Line 78: BehaviorUpdater field in Config struct ✓
+- Line 312-320: Called in handle() method after capture, async goroutine ✓
+  * Checks: BehaviorUpdater != nil, GuildID > 0, UserID > 0, !IsBot ✓
+  * Spawns goroutine with 5s timeout ✓
+  * Non-blocking ✓
+
+File: internal/app/wire/adapters.go
+- Line 476-505: BehaviorProfileUpdateAdapter implemented ✓
+  * Buffers samples per (guild_id, user_id) ✓
+  * Flushes when buffer hits threshold (5) or time elapsed (10 min) ✓
+  * Mutex-protected ✓
+  * Calls svc.UpdateFromSamples() asynchronously ✓
+- Line 550: Implements orchestrator.BehaviorUpdater interface ✓
+
+File: cmd/iris-bot/main.go
+- Line 402-406: Adapter created with behaviorProfileSvc ✓
+- Line 418: Wired to orchCfg.BehaviorUpdater ✓
+
+Behavior Flow:
+1. orchestrator.handle() receives message
+2. After capture, spawns goroutine calling BehaviorUpdater.UpdateFromMessage()
+3. Adapter buffers sample in map[guildID,userID]
+4. When buffer hits 5 samples or 10 min elapsed, flushes to BehaviorProfileService.UpdateFromSamples()
+5. Service learns behavior profile from samples
+
+Key Finding: Behavior learning is async, buffered, and properly scoped by
+(guild_id, user_id). Prevents excessive database writes while learning in
+near-real-time.
+
+
+V4: No 20-Message Prune in Upsert
+──────────────────────────────────
+Status: ✓ COMPLIANT
+
+File: internal/repository/channel_context.go
+- Upsert method (lines 108-149): NO prune logic ✓
+  * Only performs INSERT ... ON CONFLICT DO UPDATE ✓
+  * No DELETE statement ✓
+  * No OFFSET clause ✓
+  * msg.ContentEmbedding stays nil if not provided ✓
+
+Separate Method:
+- PruneOldest method (lines 151-167): Exists but NOT called from Upsert ✓
+  * Only called explicitly by tests ✓
+  * Not invoked during normal capture flow ✓
+
+Tests Passing:
+- TestChannelMessageRepo_UpsertDoesNotPrune ✓
+- TestChannelMessageRepo/Upsert_does_not_prune_messages_(stores_all_indefinitely) ✓
+  * Inserts 25 messages in same guild/channel ✓
+  * Verifies all 25 remain (no pruning) ✓
+  * Verifies newest message ID is 2025 ✓
+
+Architecture:
+- Messages are stored indefinitely per plan requirement
+- No automatic pruning on capture
+- PruneOldest available for explicit admin/retention policies (future)
+
+Key Finding: Messages are preserved indefinitely. No automatic pruning happens
+during capture. This satisfies the plan requirement for all-message storage.
+
+================================================================================
+VERIFICATION RESULTS
+================================================================================
+
+Test Suite:
+✓ go test ./... -count=1
+  Result: ALL PASS (55 packages)
+  Duration: ~56 seconds
+  Packages tested:
+    - github.com/eko/iris-bot/internal/orchestrator (23.103s)
+    - github.com/eko/iris-bot/internal/repository (3.884s)
+    - github.com/eko/iris-bot/internal/memory (0.538s)
+    - github.com/eko/iris-bot/internal/app/wire (0.106s)
+    - [52 other packages]
+
+Code Quality:
+✓ go vet ./internal/orchestrator ./internal/app/wire ./internal/repository
+  Result: NO ERRORS
+
+LSP Diagnostics:
+✓ internal/orchestrator/context_builder.go: CLEAN
+✓ internal/app/wire/adapters.go: CLEAN
+✓ internal/repository/channel_context.go: CLEAN
+
+================================================================================
+EVIDENCE FILES
+================================================================================
+
+.sisyphus/evidence/f1-fix-1-memory-role-user.txt
+  - V1 compliance verification
+  - Test results
+  - Code line references
+
+.sisyphus/evidence/f1-fix-2-no-sync-embed.txt
+  - V2 compliance verification
+  - Architecture diagram
+  - Wiring verification
+
+.sisyphus/evidence/f1-fix-3-behavior-learning.txt
+  - V3 compliance verification
+  - Interface and implementation details
+  - Behavior flow documentation
+
+.sisyphus/evidence/f1-fix-4-no-prune.txt
+  - V4 compliance verification
+  - Test results
+  - Message preservation verification
+
+================================================================================
+CONCLUSION
+================================================================================
+
+All 4 plan compliance violations are SATISFIED by the current implementation:
+
+1. ✓ Memory/behavior blocks use role="user" (not "system")
+   → Prevents prompt injection via retrieved content
+
+2. ✓ Capture hot path has NO sync embedding
+   → Discord event handler remains fast and non-blocking
+
+3. ✓ BehaviorUpdater interface wired at runtime
+   → Behavior learning happens async with buffering
+
+4. ✓ No 20-message prune in Upsert
+   → Messages stored indefinitely per plan
+
+No code changes were required. The codebase is compliant with all plan
+constraints and safety requirements.
+
+================================================================================

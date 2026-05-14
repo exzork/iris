@@ -1,0 +1,14 @@
+=== RUN   TestOrchestrator_GuildRecallInjectedIntoPrompt
+2026/05/12 09:33:06 INFO router_decision reason=mention should=true
+2026/05/12 09:33:06 INFO llm_request model=unknown
+2026/05/12 09:33:06 INFO response_chunks n=1
+2026/05/12 09:33:06 INFO typing_stopped guild=12345 channel=67890
+--- PASS: TestOrchestrator_GuildRecallInjectedIntoPrompt (0.50s)
+=== RUN   TestOrchestrator_UserBehaviorInjectedIntoPrompt
+2026/05/12 09:33:06 INFO router_decision reason=mention should=true
+2026/05/12 09:33:06 INFO llm_request model=unknown
+2026/05/12 09:33:06 INFO response_chunks n=1
+2026/05/12 09:33:06 INFO typing_stopped guild=12345 channel=67890
+--- PASS: TestOrchestrator_UserBehaviorInjectedIntoPrompt (0.50s)
+PASS
+ok  	github.com/eko/iris-bot/internal/orchestrator	1.008s

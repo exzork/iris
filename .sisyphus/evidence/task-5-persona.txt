@@ -1,0 +1,4 @@
+=== RUN   TestBuildSystemPrompt_IndonesianMandate
+--- PASS: TestBuildSystemPrompt_IndonesianMandate (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/persona	0.004s

@@ -1,0 +1,14 @@
+=== RUN   TestEmbedConfig_DefaultsWhenUnset
+--- PASS: TestEmbedConfig_DefaultsWhenUnset (0.00s)
+=== RUN   TestEmbedConfig_PathsAndThresholdSet
+--- PASS: TestEmbedConfig_PathsAndThresholdSet (0.00s)
+=== RUN   TestEmbedConfig_InvalidThresholdFallsBack
+--- PASS: TestEmbedConfig_InvalidThresholdFallsBack (0.00s)
+PASS
+ok  	github.com/eko/iris-bot/internal/config	0.002s
+
+--- grep ---
+170:		inWindowRelevance = orchestrator.NewSimilarityInWindowRelevance(orchestrator.SimilarityInWindowConfig{
+175:		crossChannelClassifier = orchestrator.NewSimilarityCrossChannelClassifier(orchestrator.SimilarityCrossChannelConfig{
+185:		inWindowRelevance = orchestrator.NewLLMInWindowRelevance(orchestrator.InWindowRelevanceConfig{
+189:		crossChannelClassifier = orchestrator.NewLLMCrossChannelClassifier(orchestrator.CrossChannelConfig{

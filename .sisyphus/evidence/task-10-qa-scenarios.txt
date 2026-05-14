@@ -1,0 +1,100 @@
+# Task 10: OpenAI-compatible Chat and Tool-Call Client - QA Evidence
+
+## Test Execution Summary
+Date: 2026-05-11
+All QA scenarios PASSED
+
+## QA Scenario Results
+
+### 1. Chat Completion Scenario ✓
+- Status: PASS
+- Description: OpenAI-compatible chat completion with model config
+- Evidence: Successfully received Indonesian I.R.I.S persona response
+- Output: "Kamu adalah I.R.I.S dari Wuthering Waves. Siap membantu dengan informasi lore."
+
+### 2. Tool Call Parsing Scenario ✓
+- Status: PASS
+- Description: Parse tool calls from LLM response with strict JSON schema validation
+- Evidence: Successfully parsed tool call with arguments
+- Tool Name: search_meme
+- Arguments: query="funny cat", limit=5
+- Validation: All arguments correctly parsed and typed
+
+### 3. Malformed Response Handling Scenario ✓
+- Status: PASS
+- Description: Reject malformed responses with clear error messages
+- Evidence: Correctly rejected invalid JSON structure
+- Error Message: "invalid response: no choices returned"
+- No API key leaked in error
+
+### 4. Timeout Handling Scenario ✓
+- Status: PASS
+- Description: Handle request timeouts gracefully
+- Evidence: Timeout correctly triggered after 500ms
+- Error Message: "context deadline exceeded"
+- No hanging requests
+
+### 5. 429 Rate Limit Retry Scenario ✓
+- Status: PASS
+- Description: Implement exponential backoff for 429 errors
+- Evidence: Successfully retried after rate limit
+- Retry Count: 2 (initial + 1 retry)
+- Retry Delay: 100ms
+- Final Result: "Success after retry"
+
+## Implementation Details
+
+### Files Created
+- internal/llm/client.go - OpenAI-compatible HTTP client
+- internal/llm/client_test.go - Unit tests (9 tests)
+- internal/llm/client_qa_test.go - QA scenarios (5 tests)
+- internal/llm/adapter.go - Domain port adapter
+- internal/llm/adapter_test.go - Adapter tests (4 tests)
+
+### Features Implemented
+✓ OpenAI-compatible chat completions API
+✓ Tool-call parsing with strict JSON schema validation
+✓ Retry/backoff logic for 429 errors
+✓ Configurable model, temperature, max_tokens via env/config
+✓ Timeout handling with context
+✓ No secret logging (API keys not in error messages)
+✓ Malformed response rejection
+✓ Domain port interface implementation
+
+### Configuration Support
+- LLM_MODEL (default: gpt-4)
+- LLM_BASE_URL (default: https://api.openai.com)
+- LLM_TEMPERATURE (default: 0.7)
+- LLM_MAX_TOKENS (default: 2048)
+- LLM_TIMEOUT (default: 30s)
+- LLM_MAX_RETRIES (default: 3)
+- LLM_RETRY_DELAY (default: 1s)
+
+### Test Coverage
+- Total Tests: 18
+- Unit Tests: 9
+- Adapter Tests: 4
+- QA Scenarios: 5
+- All tests PASSING
+
+### Security Measures
+✓ API keys not logged in error messages
+✓ Sensitive prompts not logged by default
+✓ Authorization header properly set
+✓ No secret values in debug output
+
+## Verification
+- Build: PASS (go build ./internal/llm)
+- Unit Tests: PASS (9/9)
+- Adapter Tests: PASS (4/4)
+- QA Scenarios: PASS (5/5)
+- Config Tests: PASS (existing tests still pass)
+- Full Suite: PASS (LLM package tests all pass)
+
+## Notes
+- Implements domain.LLMClient port interface
+- Compatible with OpenAI API and OpenAI-compatible providers
+- Strict JSON schema validation prevents malformed tool arguments
+- Exponential backoff with configurable retry delay
+- Context-aware timeout handling
+- No vendor-specific extensions assumed
