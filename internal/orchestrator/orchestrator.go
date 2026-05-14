@@ -502,9 +502,13 @@ func (o *Orchestrator) handle(j job) {
 	
 	if o.cfg.Streaming && o.cfg.StreamLLM != nil && len(o.cfg.Tools) == 0 {
 		streamingUsed = true
-		knownIDs := collectKnownUserIDs(event.UserID, messages)
+		triggerName := ""
+		if event.AuthorName != nil {
+			triggerName = *event.AuthorName
+		}
+		knownIDs, usernameToID := collectKnownUserMap(event.UserID, triggerName, messages)
 		sender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID).
-			WithOutboundTransform(func(s string) string { return scrubRawUserIDs(s, knownIDs) })
+			WithOutboundTransform(func(s string) string { return scrubOutbound(s, knownIDs, usernameToID) })
 		if event.Message != nil && event.Message.ID != 0 {
 			sender.WithReply(event.Message.ID, true)
 		}
@@ -531,9 +535,13 @@ func (o *Orchestrator) handle(j job) {
 		}
 	} else if o.cfg.Streaming && o.cfg.StreamToolsLLM != nil && len(o.cfg.Tools) > 0 {
 		streamingUsed = true
-		knownIDs := collectKnownUserIDs(event.UserID, messages)
+		triggerName := ""
+		if event.AuthorName != nil {
+			triggerName = *event.AuthorName
+		}
+		knownIDs, usernameToID := collectKnownUserMap(event.UserID, triggerName, messages)
 		sender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID).
-			WithOutboundTransform(func(s string) string { return scrubRawUserIDs(s, knownIDs) })
+			WithOutboundTransform(func(s string) string { return scrubOutbound(s, knownIDs, usernameToID) })
 		if event.Message != nil && event.Message.ID != 0 {
 			sender.WithReply(event.Message.ID, true)
 		}
@@ -634,8 +642,12 @@ func (o *Orchestrator) handle(j job) {
 	}
 
 	if !streamingUsed {
-		knownIDs := collectKnownUserIDs(event.UserID, messages)
-		safeResp := scrubRawUserIDs(resp, knownIDs)
+		triggerName := ""
+		if event.AuthorName != nil {
+			triggerName = *event.AuthorName
+		}
+		knownIDs, usernameToID := collectKnownUserMap(event.UserID, triggerName, messages)
+		safeResp := scrubOutbound(resp, knownIDs, usernameToID)
 		chunks := SplitMessage(safeResp, DiscordMessageLimit)
 		slog.InfoContext(ctx, "response_chunks", "n", len(chunks))
 		replied := false

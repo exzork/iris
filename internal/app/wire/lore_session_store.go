@@ -7,17 +7,26 @@ import (
 
 	"github.com/eko/iris-bot/internal/domain"
 	"github.com/eko/iris-bot/internal/lorethread"
-	"github.com/eko/iris-bot/internal/repository"
 	"github.com/jackc/pgx/v5"
 )
 
+type loreSessionRepoInterface interface {
+	OpenOrRefresh(ctx context.Context, guildID int64, channelID int64, msgID int64, msgTime time.Time, idleDeadline time.Time) (int64, error)
+	GetByID(ctx context.Context, id int64) (*domain.LoreSession, error)
+	GetOpenByChannel(ctx context.Context, guildID int64, channelID int64) (*domain.LoreSession, error)
+	ClaimDueForSummary(ctx context.Context, now time.Time) (*domain.LoreSession, error)
+	MarkStatus(ctx context.Context, id int64, status string) error
+	SetThreadResult(ctx context.Context, id int64, threadID int64, summaryMsgID int64, title string, summary string) error
+	IncrementRetry(ctx context.Context, id int64, lastErr string) error
+}
+
 // LoreSessionStoreAdapter adapts the repository.LoreSessionRepo to the lorethread.SessionStore interface.
 type LoreSessionStoreAdapter struct {
-	repo *repository.LoreSessionRepo
+	repo loreSessionRepoInterface
 }
 
 // NewLoreSessionStoreAdapter creates a new LoreSessionStoreAdapter.
-func NewLoreSessionStoreAdapter(repo *repository.LoreSessionRepo) *LoreSessionStoreAdapter {
+func NewLoreSessionStoreAdapter(repo loreSessionRepoInterface) *LoreSessionStoreAdapter {
 	return &LoreSessionStoreAdapter{repo: repo}
 }
 
@@ -62,6 +71,9 @@ func (a *LoreSessionStoreAdapter) GetByID(ctx context.Context, id int64) (*loret
 func (a *LoreSessionStoreAdapter) GetActive(ctx context.Context, guildID, channelID int64) (*lorethread.Session, error) {
 	domainSession, err := a.repo.GetOpenByChannel(ctx, guildID, channelID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
