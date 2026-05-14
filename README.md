@@ -1,14 +1,24 @@
 # I.R.I.S Discord Bot
 
-A Discord bot for Wuthering Waves communities, written in Go. It retrieves and indexes lore from the Wuthering Waves Wiki and replies in Bahasa Indonesia.
+A Discord bot for Wuthering Waves communities, written in Go. It combines wiki-grounded lore answers, Discord memory, slash-command moderation, tool calling, and MCP integrations while replying in Bahasa Indonesia.
 
 ## Overview
 
-I.R.I.S (Intelligent Retrieval & Indexing System) is a Discord bot built in Go. It answers questions about Wuthering Waves by retrieving grounded content from the official wiki, composing cited Indonesian responses, and keeping lightweight per-user memory.
+I.R.I.S (Intelligent Retrieval & Indexing System) is a Discord bot built in Go. It answers Wuthering Waves questions by retrieving indexed wiki content, composing cited Indonesian responses, and enriching context with guild-scoped memory and recent conversation history.
 
 The persona is inspired by the game's archival and retrieval AI concept. Dialogue is grounded in cited wiki content only. The bot does not invent character traits, relationships, or backstory beyond what the wiki supports.
 
-The stack is Go 1.22+, PostgreSQL with the pgvector extension, and an OpenAI-compatible LLM provider. Everything runs under Docker Compose for local development and production deployment.
+The stack is Go 1.22+, PostgreSQL 16 with pgvector, ONNX-backed local embeddings, SearXNG for web search, and an OpenAI-compatible LLM provider. Docker Compose runs the database, migrations, SearXNG, and bot process for local development or deployment.
+
+Current bot capabilities:
+
+- Responds to direct mentions, replies to bot messages, and `iris` name triggers when Discord Message Content Intent is enabled.
+- Routes requests between default and strong model tiers, with owner-gated runtime model switching.
+- Uses RAG over indexed Wuthering Waves wiki pages with citations and canon-check tooling.
+- Stores per-guild message memory in Postgres/pgvector and recalls relevant context through local embeddings.
+- Streams long replies to Discord, applies safety filters, and redacts sensitive output before sending.
+- Registers native Discord slash commands for admin configuration, allowed channels, exceptions, rate limits, and lore-thread settings.
+- Can call built-in tools (`canon_check`, `meme_search`, web search, model switching, lore-thread controls) plus file-configured MCP servers.
 
 ## Quickstart
 
@@ -95,18 +105,29 @@ All variables are loaded from `.env` (or the shell environment).
 | `LLM_BASE_URL` | no | `https://api.openai.com` | Base URL for the provider (useful for self-hosted or proxy endpoints). |
 | `LLM_TEMPERATURE` | no | `0.7` | Sampling temperature. |
 | `LLM_MAX_TOKENS` | no | `2048` | Max tokens per completion. |
-| `LLM_TIMEOUT` | no | `30s` | Per-request timeout (Go duration). |
+| `LLM_TIMEOUT` | no | `2m` | Legacy fallback timeout for LLM requests (Go duration). |
+| `LLM_CHAT_TIMEOUT` | no | `2m` | Timeout for plain chat/reply completions. |
+| `LLM_TOOL_TIMEOUT` | no | `10m` | Timeout for tool-call streaming completions. |
 | `LLM_MAX_RETRIES` | no | `3` | Retry attempts on transient errors. |
 | `LLM_RETRY_DELAY` | no | `1s` | Initial backoff delay between retries. |
+| `LLM_MODEL_ROUTER` | no | `kr/claude-haiku-4.5` | Fast classifier model used to pick default vs strong tier. |
+| `LLM_MODEL_DEFAULT` | no | `LLM_MODEL` | Standard reply model fallback. |
+| `LLM_MODEL_STRONG` | no | `kr/claude-opus-4.7` | Heavy-reasoning model for complex lore/tool tasks. |
+| `IRIS_OWNER_ID` | no | | Discord user ID allowed to mutate MCP config and runtime model overrides. |
+| `MCP_CONFIG_PATH` | no | `mcps.json` | Path to MCP server config JSON. In Docker this resolves to `/app/mcps.json`. |
+| `IRIS_CONV_LOCK_TTL` | no | `5m` | How long a conversation remains active after the bot replies. |
+| `IRIS_STREAMING` | no | `true` | Enables streaming Discord responses unless set to `false` or `0`. |
+| `DEBUG` | no | `false` | Enables debug logging and LLM audit metadata. |
 
 Never commit real values. Keep `.env` out of version control.
 
 ## Docker Compose
 
-`docker-compose.yml` defines three services:
+`docker-compose.yml` defines four services:
 
 - `postgres`: PostgreSQL 16 with pgvector, data persisted in the `postgres_data` volume. The port is bound to `127.0.0.1` only.
 - `migrate`: one-shot job that applies SQL migrations from `./migrations` on boot. Depends on a healthy `postgres`.
+- `searxng`: local SearXNG instance bound to `127.0.0.1:8888`, used by web-search tooling.
 - `bot`: the Go binary built from the repository `Dockerfile`. Depends on `postgres` healthy and `migrate` completed.
 
 Networking is on the private `iris-network` bridge. The bot container has a 1 CPU / 512MB limit by default.
@@ -145,9 +166,25 @@ go run ./cmd/migrate up
 
 The `cmd/migrate` tool accepts `up`, `down`, and `status` subcommands and reads `DATABASE_URL` from the environment.
 
-## Admin Commands
+## Slash Commands and Tools
 
-The bot exposes a `!iris` admin command family for guild administrators. See [docs/admin-commands.md](docs/admin-commands.md) for the full reference.
+The current command surface is native Discord slash commands registered from `internal/slash/native.go`:
+
+- `/iris-exception` manages exception channels.
+- `/iris-allowed` manages the allow-list of channels where the bot may answer.
+- `/iris-config` reads and writes guild settings.
+- `/iris-ratelimit` manages guild/user rate limits.
+- `/iris-lore-settings` controls lore-thread behavior.
+- `/iris-help` summarizes the command surface.
+
+Admin-only slash commands require Discord administrator permissions. Older `!iris` command behavior is documented in [docs/admin-commands.md](docs/admin-commands.md) for historical/operator reference, but the active invite URL grants `applications.commands` for slash interactions.
+
+The LLM can also call internal tools through `internal/tools`:
+
+- `canon_check` verifies lore claims against indexed wiki sources and returns verdicts with citations.
+- `meme_search` searches safe Discord/social media image results.
+- Web search, patch notes, character/item lookup, conversation summary, escalation, model switching, and lore-thread tools are registered at startup when their dependencies are available.
+- MCP tools are loaded from `mcps.json`; when `IRIS_OWNER_ID` is set, the owner can add, remove, and list MCP servers at runtime.
 
 ## Server Memory
 
@@ -169,12 +206,27 @@ Env vars (all optional, safe defaults):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MEMORY_SERVER_ENABLED` | `false` | Master switch for guild-scoped recall and async capture. |
+| `MEMORY_SERVER_ENABLED` | `true` | Master switch for guild-scoped recall and async capture. |
 | `MEMORY_SERVER_RECALL_THRESHOLD` | `0.72` | Cosine similarity floor for recall hits. Values outside `[0,1]` fall back to the default. |
 | `MEMORY_SERVER_RECALL_TOP_K` | `5` | Max recall rows injected per query. |
-| `MEMORY_SERVER_EMBED_BATCH_SIZE` | `16` | Rows per ONNX embedding batch. |
-| `MEMORY_SERVER_EMBED_WORKERS` | `2` | Parallel embedding workers. |
+| `MEMORY_SERVER_EMBED_BATCH_SIZE` | `32` | Rows per ONNX embedding batch. |
+| `MEMORY_SERVER_EMBED_WORKERS` | `1` | Parallel embedding workers. |
 | `MEMORY_SERVER_EMBED_BACKFILL_LIMIT` | `500` | Max pending rows scanned per backfill pass. |
+
+## Lore Threads
+
+Lore threads are optional worker-driven conversations for longer lore topics. They are disabled by default and controlled through environment variables plus `/iris-lore-settings`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IRIS_LORE_THREADS_ENABLED` | `false` | Enables the lore-thread worker and thread capture. |
+| `IRIS_LORE_IDLE_DURATION` | `5m` | Idle time before a lore thread is considered ready for summarization/compaction. |
+| `IRIS_LORE_COMPACTION_TARGET` | `0.70` | Target compression ratio for lore-thread compaction. |
+| `IRIS_LORE_THREAD_CAP_PER_HOUR` | `6` | Per-guild cap for created lore threads. |
+| `IRIS_LORE_WORKER_POLL_INTERVAL` | `30s` | Background worker polling interval. |
+| `IRIS_LORE_LLM_TIMEOUT` | `30s` | Timeout for lore-thread LLM work. |
+| `IRIS_LORE_LLM_MODEL` | `LLM_MODEL_STRONG` | Model used for lore-thread compaction/capture. |
+| `IRIS_LORE_CAPTURE_TIMEOUT` | `60s` | Timeout for capture operations. |
 
 Invalid values fall back to defaults rather than failing startup, so a malformed env cannot silently disable guild isolation.
 
