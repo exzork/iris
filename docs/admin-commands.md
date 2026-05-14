@@ -1,200 +1,176 @@
-# Admin Commands
+# Admin Slash Commands
 
-The `!iris` command family is reserved for guild administrators. Commands run in any text channel the bot can see. Unless noted, the bot replies in the same channel.
+I.R.I.S uses native Discord slash commands. They are registered from `internal/slash/native.go` and wrap the same admin handlers used by the bot's internal command layer.
 
 ## Who can run admin commands
 
-A user must have the Discord **Manage Guild** permission in the guild where the command is issued. Users without this permission get a neutral refusal: *"Perintah ini hanya untuk administrator guild."*
+Admin-only commands require Discord administrator permissions in the guild where the command is issued. Non-admin users receive a neutral refusal in Indonesian. Direct messages are rejected because admin settings are guild-scoped.
 
-Direct messages are rejected. Admin commands are guild-scoped only.
-
-## Commands
-
-### `!iris help`
-
-Show the list of admin commands and a short usage hint.
-
-Syntax:
+The public help command is available to all users:
 
 ```
-!iris help
+/iris-help
 ```
+
+It lists the active slash command surface and reminds the bot owner that MCP servers can be managed through owner-gated natural-language tool calls.
+
+## Channel exceptions
+
+Exception channels disable the plain `iris` name trigger in specific channels. Direct mentions and replies to the bot still work.
+
+### `/iris-exception add channel_id:<channelID>`
+
+Adds a channel to the exception list.
 
 Example:
 
 ```
-!iris help
-```
-
-Error behavior: none. Always returns the help text.
-
-### `!iris exception add <channelID>`
-
-Add a channel to the exception list. In exception channels the bot will not auto-reply to the `iris` name trigger. Mentions and replies still work.
-
-Syntax:
-
-```
-!iris exception add <channelID>
-```
-
-Example:
-
-```
-!iris exception add 1234567890
+/iris-exception add channel_id:1234567890
 ```
 
 Error behavior:
 
-- Missing or malformed channel ID: *"Channel ID tidak valid."*
-- Channel not found or not in this guild: *"Channel tidak ditemukan di guild ini."*
-- Channel already in the list: no-op, returns *"Channel sudah ada di daftar pengecualian."*
+- Missing or malformed channel ID: `Channel ID tidak valid.`
+- Channel not found or not in this guild: `Channel tidak ditemukan di guild ini.`
+- Channel already listed: no-op response.
 
-### `!iris exception remove <channelID>`
+### `/iris-exception remove channel_id:<channelID>`
 
-Remove a channel from the exception list.
-
-Syntax:
-
-```
-!iris exception remove <channelID>
-```
+Removes a channel from the exception list.
 
 Example:
 
 ```
-!iris exception remove 1234567890
+/iris-exception remove channel_id:1234567890
 ```
 
 Error behavior:
 
-- Missing or malformed channel ID: *"Channel ID tidak valid."*
-- Channel not in the list: *"Channel tidak ada di daftar pengecualian."*
+- Missing or malformed channel ID: `Channel ID tidak valid.`
+- Channel not listed: no-op or not-found response from the handler.
 
-### `!iris exception list`
+### `/iris-exception list`
 
-List the exception channels for the current guild.
+Lists exception channels for the current guild.
 
-Syntax:
+## Allowed channels
 
-```
-!iris exception list
-```
+Allowed channels define where I.R.I.S may answer. When configured, the router uses this allow-list before admitting normal chat traffic.
 
-Example:
+### `/iris-allowed add channel_id:<channelID>`
 
-```
-!iris exception list
-```
-
-Error behavior: returns an empty list message if none exist.
-
-### `!iris ratelimit set <scope> <limit>`
-
-Set a rate limit for a given scope. Supported scopes are `guild` and `user`. The limit is the maximum number of bot-triggering messages per minute.
-
-Syntax:
-
-```
-!iris ratelimit set <scope> <limit>
-```
+Adds a channel to the allow-list.
 
 Example:
 
 ```
-!iris ratelimit set guild 60
-!iris ratelimit set user 10
+/iris-allowed add channel_id:1234567890
 ```
 
-Error behavior:
+### `/iris-allowed remove channel_id:<channelID>`
 
-- Unknown scope: *"Scope harus `guild` atau `user`."*
-- Non-numeric or negative limit: *"Limit harus angka positif."*
-- Limit above the configured hard ceiling: clamped to the ceiling, response notes the adjustment.
-
-### `!iris ratelimit get`
-
-Show the current rate limit configuration for the guild.
-
-Syntax:
-
-```
-!iris ratelimit get
-```
+Removes a channel from the allow-list.
 
 Example:
 
 ```
-!iris ratelimit get
+/iris-allowed remove channel_id:1234567890
 ```
 
-Error behavior: none.
+### `/iris-allowed list`
 
-### `!iris config list`
+Lists allowed channels for the current guild.
 
-List all per-guild config keys and their current values.
+## Guild configuration
 
-Syntax:
+### `/iris-config list`
 
-```
-!iris config list
-```
+Lists per-guild config keys and current values.
+
+### `/iris-config get key:<key>`
+
+Shows one config value.
 
 Example:
 
 ```
-!iris config list
+/iris-config get key:language
 ```
 
-Error behavior: none. Returns an empty list if no keys are set.
+### `/iris-config set key:<key> value:<value>`
 
-### `!iris config get <key>`
-
-Show the current value of a single config key.
-
-Syntax:
-
-```
-!iris config get <key>
-```
+Sets one config value. Values are validated by the underlying settings handler before they are persisted.
 
 Example:
 
 ```
-!iris config get language
+/iris-config set key:language value:id
+/iris-config set key:autoreply value:true
 ```
 
-Error behavior:
+Successful changes are recorded in `audit_events` with actor and before/after values when the handler has enough context.
 
-- Missing key argument: *"Key wajib diisi."*
-- Unknown key: *"Key tidak dikenal."*
+## Rate limits
 
-### `!iris config set <key> <value>`
+The current slash command manages per-channel rates.
 
-Set a config key for the current guild. Values are validated against the key's type (boolean, integer, or string with a fixed enum).
+### `/iris-ratelimit set channel_id:<channelID> rate:<rate>`
 
-Syntax:
-
-```
-!iris config set <key> <value>
-```
+Sets the allowed rate for a channel. The `rate` option is an integer rate per second.
 
 Example:
 
 ```
-!iris config set language id
-!iris config set autoreply true
+/iris-ratelimit set channel_id:1234567890 rate:1
 ```
 
-Error behavior:
+### `/iris-ratelimit get channel_id:<channelID>`
 
-- Missing arguments: *"Key dan value wajib diisi."*
-- Unknown key: *"Key tidak dikenal."*
-- Invalid value for the key's type: *"Value tidak valid untuk key ini."*
-- Audit: every successful `config set` writes an `audit_events` row with the actor, key, old value, and new value.
+Shows the configured rate limit for a channel.
+
+Example:
+
+```
+/iris-ratelimit get channel_id:1234567890
+```
+
+## Lore-thread settings
+
+Lore-thread settings are registered from `internal/slash/lore_settings.go` when the lore settings handler is wired at startup.
+
+### `/iris-lore enable`
+
+Enables lore threads for the guild.
+
+### `/iris-lore disable`
+
+Disables lore threads for the guild.
+
+### `/iris-lore status`
+
+Shows whether lore threads are enabled and the current thread cap.
+
+### `/iris-lore cap value:<1-100>`
+
+Sets the per-hour lore-thread creation cap.
+
+Example:
+
+```
+/iris-lore cap value:6
+```
+
+## Owner-gated runtime tools
+
+When `IRIS_OWNER_ID` is set, the matching Discord user can ask I.R.I.S in natural language to manage runtime-only owner tools:
+
+- Add, remove, and list MCP servers backed by `mcps.json`.
+- Set, reset, and inspect model overrides persisted in `global_settings`.
+
+These are not public slash commands. They are LLM tool calls gated by caller identity.
 
 ## General error behavior
 
-- Commands with unknown verbs return *"Perintah tidak dikenal. Coba `!iris help`."*
-- Commands issued by a non-admin return the permission refusal above and write an audit row.
-- Commands that fail due to a transient database error return *"Terjadi kesalahan, coba lagi nanti."* and log the underlying error at `error` level.
+- Unknown or malformed slash options are handled by Discord before command execution when possible.
+- Non-admin users receive the command's Indonesian admin refusal.
+- Transient database errors return a short Indonesian retry message and are logged server-side.
