@@ -12,7 +12,7 @@ import (
 
 // ContextLine represents a single line of context in the tagged format.
 type ContextLine struct {
-	Raw string // The raw tagged line: <channel>|<thread>|<userid>|<timestamp>|<message>
+	Raw string // The raw tagged line: <channel>|<thread>|<username>|<userid>|<timestamp>|<message>
 }
 
 // CompactionReport contains metrics about a compaction operation.

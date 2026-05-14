@@ -173,6 +173,111 @@ func TestOrchestrator_CaptureAllGuildMessages(t *testing.T) {
 	}
 }
 
+func TestOrchestrator_CapturePreservesAuthorName(t *testing.T) {
+	capture := &integrationTestChannelCapture{}
+	decider := &integrationTestDecider{shouldReply: false}
+	contextStore := &integrationTestContextStore{}
+	llmCaller := &integrationTestLLMCaller{}
+	sender := &integrationTestMessageSender{}
+
+	cfg := Config{
+		Router:       decider,
+		LLM:          llmCaller,
+		Discord:      sender,
+		ContextStore: contextStore,
+		Capture:      capture,
+		SystemPrompt: "test system prompt",
+		QueueSize:    128,
+		WorkerCount:  1,
+		JobTimeout:   5 * time.Second,
+	}
+
+	orch := New(cfg)
+	orch.Start()
+	defer orch.Stop()
+
+	authorOnMessage := "eko"
+	authorOnEvent := "eko-event-fallback"
+
+	cases := []struct {
+		name             string
+		messageAuthor    *string
+		eventAuthor      *string
+		wantAuthorName   *string
+		shouldHaveAuthor bool
+	}{
+		{
+			name:             "author from message",
+			messageAuthor:    &authorOnMessage,
+			eventAuthor:      nil,
+			wantAuthorName:   &authorOnMessage,
+			shouldHaveAuthor: true,
+		},
+		{
+			name:             "fallback to event author",
+			messageAuthor:    nil,
+			eventAuthor:      &authorOnEvent,
+			wantAuthorName:   &authorOnEvent,
+			shouldHaveAuthor: true,
+		},
+		{
+			name:             "nil author stays nil",
+			messageAuthor:    nil,
+			eventAuthor:      nil,
+			wantAuthorName:   nil,
+			shouldHaveAuthor: false,
+		},
+	}
+
+	for i, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			event := &domain.DiscordEvent{
+				GuildID:    100,
+				ChannelID:  200,
+				UserID:     int64(300 + i),
+				AuthorName: tc.eventAuthor,
+				Message: &domain.DiscordMessage{
+					ID:         int64(900 + i),
+					AuthorName: tc.messageAuthor,
+					Content:    "msg " + tc.name,
+				},
+			}
+
+			if err := orch.Enqueue(context.Background(), event); err != nil {
+				t.Fatalf("enqueue: %v", err)
+			}
+			time.Sleep(200 * time.Millisecond)
+
+			capture.mu.Lock()
+			defer capture.mu.Unlock()
+
+			var got *domain.ChannelMessage
+			for _, m := range capture.captured {
+				if m.MessageID == event.Message.ID {
+					got = m
+					break
+				}
+			}
+			if got == nil {
+				t.Fatalf("expected captured message for id %d", event.Message.ID)
+			}
+
+			if !tc.shouldHaveAuthor {
+				if got.AuthorName != nil {
+					t.Fatalf("expected nil AuthorName, got %q", *got.AuthorName)
+				}
+				return
+			}
+			if got.AuthorName == nil {
+				t.Fatalf("expected AuthorName=%q, got nil", *tc.wantAuthorName)
+			}
+			if *got.AuthorName != *tc.wantAuthorName {
+				t.Fatalf("expected AuthorName=%q, got %q", *tc.wantAuthorName, *got.AuthorName)
+			}
+		})
+	}
+}
+
 func TestOrchestrator_NonTriggeringMessageCapturedButNoReply(t *testing.T) {
 	capture := &integrationTestChannelCapture{}
 	decider := &integrationTestDecider{shouldReply: false}

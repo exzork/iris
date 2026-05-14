@@ -128,9 +128,9 @@ func TestContextBuilder_AllowedChannels_TaggedFormat(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"<general|-|501|",
-		"<general|-|502|",
-		"<general|thread-lore|503|",
+		"<general|-|user|501|",
+		"<general|-|user|502|",
+		"<general|thread-lore|user|503|",
 		"halo dari general",
 		"halo juga",
 		"balasan di thread",

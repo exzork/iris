@@ -16,7 +16,7 @@ type LoreAnchorResolver interface {
 }
 
 // buildLoreAnchorLines formats the anchor summary message using the existing
-// <channelname>|<threadname>|<userid>|<timestamp>|<message> format.
+// <channelname>|<threadname>|<username>|<userid>|<timestamp>|<message> format.
 // Returns formatted lines ready for context injection, or an error if resolution fails.
 // If the anchor cannot be resolved (sql.ErrNoRows), returns empty slice and nil error.
 func buildLoreAnchorLines(
@@ -62,7 +62,7 @@ func buildLoreAnchorLines(
 	ts := anchor.CreatedAt.UTC().Format(time.RFC3339)
 
 	// Use a synthetic user ID of 0 for the anchor summary (system-generated)
-	line := fmt.Sprintf(tagFormatMessage, safeTag(channelName), safeTag(threadName), int64(0), ts, summaryText)
+	line := fmt.Sprintf(tagFormatMessage, safeTag(channelName), safeTag(threadName), safeTag(""), int64(0), ts, summaryText)
 
 	// Prefix with [ANCHOR] marker so compactor can identify and preserve it
 	anchorLine := "[ANCHOR] " + line

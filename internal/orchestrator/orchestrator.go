@@ -28,6 +28,14 @@ type MessageSender interface {
 	SendMessage(ctx context.Context, guildID, channelID int64, content string) error
 }
 
+type ReplyMessageSender interface {
+	ReplyMessage(ctx context.Context, guildID, channelID, replyToMessageID int64, content string, mentionRepliedUser bool) error
+}
+
+type ReplyMessageReturningIDSender interface {
+	ReplyMessageReturningID(ctx context.Context, guildID, channelID, replyToMessageID int64, content string, mentionRepliedUser bool) (int64, error)
+}
+
 type TypingSender interface {
 	SendTyping(ctx context.Context, guildID, channelID int64) error
 }
@@ -338,14 +346,19 @@ func (o *Orchestrator) handle(j job) {
 
 	// Capture incoming user message for context window (before router decision)
 	if o.cfg.Capture != nil && event.Message != nil && event.GuildID > 0 && event.ChannelID > 0 {
+		authorName := event.Message.AuthorName
+		if authorName == nil {
+			authorName = event.AuthorName
+		}
 		msg := &domain.ChannelMessage{
-			GuildID:   event.GuildID,
-			ChannelID: event.ChannelID,
-			MessageID: event.Message.ID,
-			UserID:    event.UserID,
-			Content:   event.Message.Content,
-			IsBot:     false,
-			CreatedAt: time.Now(),
+			GuildID:    event.GuildID,
+			ChannelID:  event.ChannelID,
+			MessageID:  event.Message.ID,
+			UserID:     event.UserID,
+			AuthorName: authorName,
+			Content:    event.Message.Content,
+			IsBot:      false,
+			CreatedAt:  time.Now(),
 		}
 		if captureErr := o.cfg.Capture.Capture(ctx, msg); captureErr != nil {
 			slog.DebugContext(ctx, "channel_capture", "guild", event.GuildID, "channel", event.ChannelID, "is_bot", false, "err", captureErr)
@@ -475,7 +488,12 @@ func (o *Orchestrator) handle(j job) {
 	
 	if o.cfg.Streaming && o.cfg.StreamLLM != nil && len(o.cfg.Tools) == 0 {
 		streamingUsed = true
-		sender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID)
+		knownIDs := collectKnownUserIDs(event.UserID, messages)
+		sender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID).
+			WithOutboundTransform(func(s string) string { return scrubRawUserIDs(s, knownIDs) })
+		if event.Message != nil && event.Message.ID != 0 {
+			sender.WithReply(event.Message.ID, true)
+		}
 		callbacks := llm.StreamCallbacks{
 			OnDelta: func(text string) {
 				if err := sender.Push(ctx, text); err != nil {
@@ -499,7 +517,12 @@ func (o *Orchestrator) handle(j job) {
 		}
 	} else if o.cfg.Streaming && o.cfg.StreamToolsLLM != nil && len(o.cfg.Tools) > 0 {
 		streamingUsed = true
-		sender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID)
+		knownIDs := collectKnownUserIDs(event.UserID, messages)
+		sender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID).
+			WithOutboundTransform(func(s string) string { return scrubRawUserIDs(s, knownIDs) })
+		if event.Message != nil && event.Message.ID != 0 {
+			sender.WithReply(event.Message.ID, true)
+		}
 		resp, llmErr = o.cfg.StreamToolsLLM.ChatWithToolsStream(ctx, messages, llm.ChatWithToolsStreamConfig{
 			Model:   modelToUse,
 			GuildID: event.GuildID,
@@ -526,9 +549,14 @@ func (o *Orchestrator) handle(j job) {
 			strongModel := o.resolveStrongModel()
 			if reason := ex.Reason(); reason != "" && strongModel != "" && modelToUse != strongModel {
 				alreadyEscalated = true
+				firstSenderEmpty := sender.SentCount() == 0
 				_ = sender.Discard()
-				
-				secondSender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID)
+
+				secondSender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID).
+					WithOutboundTransform(func(s string) string { return scrubRawUserIDs(s, knownIDs) })
+				if firstSenderEmpty && event.Message != nil && event.Message.ID != 0 {
+					secondSender.WithReply(event.Message.ID, true)
+				}
 				
 				filteredTools := make([]map[string]interface{}, 0, len(o.cfg.Tools))
 				for _, tool := range o.cfg.Tools {
@@ -592,11 +620,28 @@ func (o *Orchestrator) handle(j job) {
 	}
 
 	if !streamingUsed {
-		chunks := SplitMessage(resp, DiscordMessageLimit)
+		knownIDs := collectKnownUserIDs(event.UserID, messages)
+		safeResp := scrubRawUserIDs(resp, knownIDs)
+		chunks := SplitMessage(safeResp, DiscordMessageLimit)
 		slog.InfoContext(ctx, "response_chunks", "n", len(chunks))
+		replied := false
+		canReply := false
+		var replier ReplyMessageSender
+		if r, ok := o.cfg.Discord.(ReplyMessageSender); ok && event.Message != nil && event.Message.ID != 0 {
+			replier = r
+			canReply = true
+		}
 		for _, chunk := range chunks {
 			if ctx.Err() != nil {
 				return
+			}
+			if canReply && !replied {
+				if err := replier.ReplyMessage(ctx, event.GuildID, event.ChannelID, event.Message.ID, chunk, true); err != nil {
+					slog.WarnContext(ctx, "reply_send_failed", "guild", event.GuildID, "channel", event.ChannelID, "err", err)
+					_ = o.cfg.Discord.SendMessage(ctx, event.GuildID, event.ChannelID, chunk)
+				}
+				replied = true
+				continue
 			}
 			_ = o.cfg.Discord.SendMessage(ctx, event.GuildID, event.ChannelID, chunk)
 		}

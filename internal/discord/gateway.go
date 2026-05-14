@@ -253,6 +253,45 @@ func (ga *GatewayAdapter) SendMessageReturningID(ctx context.Context, guildID, c
 	return id, nil
 }
 
+func buildReplyMessage(guildID, channelID, replyToMessageID int64, content string, mentionRepliedUser bool) *discordgo.MessageSend {
+	failIfNotExists := false
+	return &discordgo.MessageSend{
+		Content: content,
+		Reference: &discordgo.MessageReference{
+			Type:            discordgo.MessageReferenceTypeDefault,
+			MessageID:       fmt.Sprintf("%d", replyToMessageID),
+			ChannelID:       fmt.Sprintf("%d", channelID),
+			GuildID:         fmt.Sprintf("%d", guildID),
+			FailIfNotExists: &failIfNotExists,
+		},
+		AllowedMentions: &discordgo.MessageAllowedMentions{
+			Parse:       []discordgo.AllowedMentionType{discordgo.AllowedMentionTypeUsers},
+			RepliedUser: mentionRepliedUser,
+		},
+	}
+}
+
+func (ga *GatewayAdapter) ReplyMessage(ctx context.Context, guildID, channelID, replyToMessageID int64, content string, mentionRepliedUser bool) error {
+	channelIDStr := fmt.Sprintf("%d", channelID)
+	send := buildReplyMessage(guildID, channelID, replyToMessageID, content, mentionRepliedUser)
+	_, err := ga.session.ChannelMessageSendComplex(channelIDStr, send)
+	return err
+}
+
+func (ga *GatewayAdapter) ReplyMessageReturningID(ctx context.Context, guildID, channelID, replyToMessageID int64, content string, mentionRepliedUser bool) (int64, error) {
+	channelIDStr := fmt.Sprintf("%d", channelID)
+	send := buildReplyMessage(guildID, channelID, replyToMessageID, content, mentionRepliedUser)
+	msg, err := ga.session.ChannelMessageSendComplex(channelIDStr, send)
+	if err != nil {
+		return 0, err
+	}
+	id, parseErr := strconv.ParseInt(msg.ID, 10, 64)
+	if parseErr != nil {
+		return 0, parseErr
+	}
+	return id, nil
+}
+
 func (ga *GatewayAdapter) EditMessage(ctx context.Context, guildID, channelID, messageID int64, content string) error {
 	channelIDStr := fmt.Sprintf("%d", channelID)
 	messageIDStr := fmt.Sprintf("%d", messageID)

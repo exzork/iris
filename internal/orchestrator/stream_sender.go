@@ -16,6 +16,14 @@ type DiscordEditSender interface {
 	EditMessage(ctx context.Context, guildID, channelID, messageID int64, content string) error
 }
 
+// DiscordReplyEditSender is the optional capability used by the streaming
+// sender to anchor the very first outbound message as a Discord reply with
+// ping enabled. Any subsequent flush/edit goes through the regular
+// DiscordEditSender path so we never re-ping the user mid-stream.
+type DiscordReplyEditSender interface {
+	ReplyMessageReturningID(ctx context.Context, guildID, channelID, replyToMessageID int64, content string, mentionRepliedUser bool) (int64, error)
+}
+
 const (
 	streamFlushMinChars   = 200
 	streamPendingFlushCap = 1500
@@ -36,6 +44,12 @@ type StreamingSender struct {
 	lastErr  error
 
 	limiter *ChannelRateLimiter
+
+	replyToMessageID   int64
+	mentionRepliedUser bool
+	replyConsumed      bool
+
+	outboundTransform func(string) string
 }
 
 func NewStreamingSender(out DiscordChunkSender, limiter *ChannelRateLimiter, guildID, channelID int64) *StreamingSender {
@@ -45,6 +59,34 @@ func NewStreamingSender(out DiscordChunkSender, limiter *ChannelRateLimiter, gui
 		channelID: channelID,
 		limiter:   limiter,
 	}
+}
+
+// WithReply configures the streaming sender to send the FIRST outbound
+// message as a Discord reply pinging the original triggering message.
+// Subsequent flushes use the regular send/edit path so the user is not
+// re-pinged. Calling this after a message has already been sent is a no-op.
+func (s *StreamingSender) WithReply(replyToMessageID int64, mentionRepliedUser bool) *StreamingSender {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.sent > 0 {
+		return s
+	}
+	s.replyToMessageID = replyToMessageID
+	s.mentionRepliedUser = mentionRepliedUser
+	s.replyConsumed = false
+	return s
+}
+
+// WithOutboundTransform configures the streaming sender to apply a transform
+// function to every outbound chunk before sending to Discord. The transform
+// is applied only on the way out; the internal active buffer remains raw so
+// subsequent appends/edits see the same growing buffer. If fn is nil, no
+// transform is applied. Returns s for chaining.
+func (s *StreamingSender) WithOutboundTransform(fn func(string) string) *StreamingSender {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.outboundTransform = fn
+	return s
 }
 
 func (s *StreamingSender) Push(ctx context.Context, fragment string) error {
@@ -158,18 +200,43 @@ func (s *StreamingSender) startNewMessageLocked(ctx context.Context, content str
 	if err := s.limiter.Wait(ctx, s.channelID); err != nil {
 		return err
 	}
+
+	outbound := content
+	if s.outboundTransform != nil {
+		outbound = s.outboundTransform(content)
+	}
+
+	useReply := !s.replyConsumed && s.replyToMessageID != 0
+
+	if useReply {
+		if replier, ok := s.out.(DiscordReplyEditSender); ok {
+			id, err := replier.ReplyMessageReturningID(ctx, s.guildID, s.channelID, s.replyToMessageID, outbound, s.mentionRepliedUser)
+			if err != nil {
+				return err
+			}
+			s.active.Reset()
+			s.active.WriteString(content)
+			s.activeID = id
+			s.hasActive = id != 0
+			s.sent++
+			s.replyConsumed = true
+			return nil
+		}
+	}
+
 	editor, ok := s.out.(DiscordEditSender)
 	if !ok {
-		if err := s.out.SendMessage(ctx, s.guildID, s.channelID, content); err != nil {
+		if err := s.out.SendMessage(ctx, s.guildID, s.channelID, outbound); err != nil {
 			return err
 		}
 		s.active.Reset()
 		s.active.WriteString(content)
 		s.activeID, s.hasActive = 0, false
 		s.sent++
+		s.replyConsumed = true
 		return nil
 	}
-	id, err := editor.SendMessageReturningID(ctx, s.guildID, s.channelID, content)
+	id, err := editor.SendMessageReturningID(ctx, s.guildID, s.channelID, outbound)
 	if err != nil {
 		return err
 	}
@@ -178,6 +245,7 @@ func (s *StreamingSender) startNewMessageLocked(ctx context.Context, content str
 	s.activeID = id
 	s.hasActive = id != 0
 	s.sent++
+	s.replyConsumed = true
 	return nil
 }
 
@@ -189,7 +257,11 @@ func (s *StreamingSender) editActiveLocked(ctx context.Context) error {
 	if err := s.limiter.Wait(ctx, s.channelID); err != nil {
 		return err
 	}
-	return editor.EditMessage(ctx, s.guildID, s.channelID, s.activeID, s.active.String())
+	outbound := s.active.String()
+	if s.outboundTransform != nil {
+		outbound = s.outboundTransform(outbound)
+	}
+	return editor.EditMessage(ctx, s.guildID, s.channelID, s.activeID, outbound)
 }
 
 func (s *StreamingSender) finalizeActiveLocked(ctx context.Context) (bool, error) {

@@ -345,8 +345,9 @@ func TestContextBuilderLineFormat(t *testing.T) {
 	}
 
 	// Line format contract:
-	// - prior-context messages: "<username>: <content>" or plain content if no author
-	// - current user message: plain content (no prefix)
+	// - prior-context messages: "<username> (user id: N): <content>" or plain content if no author
+	// - current user message: same identity-prefixed format so the LLM can
+	//   disambiguate the caller from other speakers in the same channel.
 	// - no channel IDs, no timestamps, no "user:N" fallbacks leak into any message
 	// This protects against the LLM mimicking internal metadata in its reply.
 	for i, msg := range messages {
@@ -361,8 +362,9 @@ func TestContextBuilderLineFormat(t *testing.T) {
 			t.Errorf("message %d leaked bracketed channel/timestamp metadata: %q", i, content)
 		}
 		if i == len(messages)-1 {
-			if content != "reply" {
-				t.Errorf("current user message should be plain %q, got %q", "reply", content)
+			want := "bob (user id: 11): reply"
+			if content != want {
+				t.Errorf("current user message should be %q, got %q", want, content)
 			}
 			continue
 		}
@@ -528,6 +530,78 @@ func TestContextBuilderWithoutLoreAnchor_NonThreadMessage(t *testing.T) {
 
 	if len(messages) < 2 {
 		t.Errorf("expected at least system + current message")
+	}
+}
+
+func TestFormatUserLabel(t *testing.T) {
+	cases := []struct {
+		name       string
+		authorName *string
+		userID     int64
+		isBot      bool
+		want       string
+	}{
+		{"username and id", strPtr("eko"), 111, false, "eko (user id: 111)"},
+		{"id only fallback", nil, 222, false, "user id: 222"},
+		{"empty username string falls back to id", strPtr(""), 333, false, "user id: 333"},
+		{"bot keeps name without claimed id", strPtr("iris"), 444, true, "iris"},
+		{"bot without name returns empty", nil, 444, true, ""},
+		{"missing user id with name returns empty-id", strPtr("anon"), 0, false, "anon"},
+		{"missing everything returns empty", nil, 0, false, ""},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := formatUserLabel(tc.authorName, tc.userID, tc.isBot)
+			if got != tc.want {
+				t.Errorf("formatUserLabel(%v, %d, %v) = %q, want %q", tc.authorName, tc.userID, tc.isBot, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestContextBuilder_BusyChannel_DistinguishesUsersByID(t *testing.T) {
+	store := NewMockContextStore()
+	store.addMessage(1, 100, 1, 111, "eko", "first message", false, nil)
+	store.addMessage(1, 100, 2, 222, "mika", "different speaker", false, nil)
+
+	builder := NewContextBuilder(ContextBuilderConfig{
+		MinContext:        10,
+		CurrentChannelMax: 20,
+		ReplyDepthLimit:   3,
+		PerMessageCharCap: 500,
+	})
+
+	currentEvent := &domain.DiscordEvent{
+		GuildID:    1,
+		ChannelID:  100,
+		UserID:     111,
+		AuthorName: strPtr("eko"),
+		Message: &domain.DiscordMessage{
+			ID:      3,
+			Content: "current ping",
+		},
+		CreatedAt: time.Now(),
+	}
+
+	messages, err := builder.Build(context.Background(), currentEvent, store, "sys")
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	combined := ""
+	for _, m := range messages {
+		combined += "\n" + m["content"]
+	}
+
+	for _, want := range []string{
+		"eko (user id: 111): first message",
+		"mika (user id: 222): different speaker",
+		"eko (user id: 111): current ping",
+	} {
+		if !contains(combined, want) {
+			t.Errorf("missing %q in rendered context:\n%s", want, combined)
+		}
 	}
 }
 

@@ -12,6 +12,67 @@ import (
 	"github.com/eko/iris-bot/internal/domain"
 )
 
+func TestBuildReplyMessage_AttachesReferenceAndAllowedMentions(t *testing.T) {
+	send := buildReplyMessage(123, 456, 789, "hello", true)
+
+	if send.Content != "hello" {
+		t.Errorf("Content = %q, want %q", send.Content, "hello")
+	}
+	if send.Reference == nil {
+		t.Fatal("expected Reference, got nil")
+	}
+	if send.Reference.MessageID != "789" {
+		t.Errorf("Reference.MessageID = %q, want %q", send.Reference.MessageID, "789")
+	}
+	if send.Reference.ChannelID != "456" {
+		t.Errorf("Reference.ChannelID = %q, want %q", send.Reference.ChannelID, "456")
+	}
+	if send.Reference.GuildID != "123" {
+		t.Errorf("Reference.GuildID = %q, want %q", send.Reference.GuildID, "123")
+	}
+	if send.Reference.FailIfNotExists == nil || *send.Reference.FailIfNotExists {
+		t.Errorf("Reference.FailIfNotExists should be false (do not fail on missing parent)")
+	}
+	if send.AllowedMentions == nil {
+		t.Fatal("expected AllowedMentions, got nil")
+	}
+	if !send.AllowedMentions.RepliedUser {
+		t.Errorf("expected RepliedUser=true (ping enabled)")
+	}
+	wantParse := []discordgo.AllowedMentionType{discordgo.AllowedMentionTypeUsers}
+	if len(send.AllowedMentions.Parse) != len(wantParse) || send.AllowedMentions.Parse[0] != wantParse[0] {
+		t.Errorf("AllowedMentions.Parse = %v, want %v", send.AllowedMentions.Parse, wantParse)
+	}
+	for _, mt := range send.AllowedMentions.Parse {
+		if mt == discordgo.AllowedMentionTypeRoles || mt == discordgo.AllowedMentionTypeEveryone {
+			t.Errorf("Parse must not include roles or everyone, got %v", mt)
+		}
+	}
+}
+
+func TestBuildReplyMessage_NoPingPreservesUserMentionParse(t *testing.T) {
+	send := buildReplyMessage(1, 2, 3, "hi <@4>", false)
+
+	if send.AllowedMentions == nil {
+		t.Fatal("expected AllowedMentions even when ping disabled")
+	}
+	if send.AllowedMentions.RepliedUser {
+		t.Errorf("expected RepliedUser=false")
+	}
+	foundUsers := false
+	for _, mt := range send.AllowedMentions.Parse {
+		if mt == discordgo.AllowedMentionTypeUsers {
+			foundUsers = true
+		}
+	}
+	if !foundUsers {
+		t.Errorf("user mentions must remain parseable so explicit <@id> tags work")
+	}
+	if send.Content != "hi <@4>" {
+		t.Errorf("explicit user mention must not be stripped, got %q", send.Content)
+	}
+}
+
 func TestGatewayAdapterCallbackNonBlocking(t *testing.T) {
 	callbackCalled := make(chan bool, 1)
 	slowCallback := func(ctx context.Context, event *domain.DiscordEvent) error {

@@ -301,9 +301,9 @@ func (cb *ContextBuilder) buildUntrustedMemoryBlock(ctx context.Context, event *
 		if r == nil || r.Message == nil {
 			continue
 		}
-		author := "user"
-		if r.Message.AuthorName != nil {
-			author = *r.Message.AuthorName
+		author := formatUserLabel(r.Message.AuthorName, r.Message.UserID, r.Message.IsBot)
+		if author == "" {
+			author = "user"
 		}
 		content := r.Message.Content
 		if cap := cb.cfg.PerMessageCharCap; cap > 0 && utf8.RuneCountInString(content) > cap {
@@ -412,7 +412,7 @@ func (cb *ContextBuilder) collectReplyAncestors(
 }
 
 func (cb *ContextBuilder) renderMessage(msg *domain.ChannelMessage) string {
-	userLabel := cb.getUserLabel(msg.AuthorName, msg.UserID)
+	userLabel := formatUserLabel(msg.AuthorName, msg.UserID, msg.IsBot)
 	content := cb.truncateContent(msg.Content)
 	if userLabel == "" {
 		return content
@@ -421,14 +421,32 @@ func (cb *ContextBuilder) renderMessage(msg *domain.ChannelMessage) string {
 }
 
 func (cb *ContextBuilder) renderCurrentMessage(event *domain.DiscordEvent) string {
-	return cb.truncateContent(event.Message.Content)
+	content := cb.truncateContent(event.Message.Content)
+	userLabel := formatUserLabel(event.AuthorName, event.UserID, event.IsBot)
+	if userLabel == "" {
+		return content
+	}
+	return fmt.Sprintf("%s: %s", userLabel, content)
 }
 
-func (cb *ContextBuilder) getUserLabel(authorName *string, userID int64) string {
-	if authorName != nil && *authorName != "" {
-		return *authorName
+// formatUserLabel returns an internal-only identity label for LLM context.
+// MUST NOT be sent to Discord verbatim - it embeds the raw user id, which the
+// outbound leak guard is responsible for scrubbing from user-visible output.
+func formatUserLabel(authorName *string, userID int64, isBot bool) string {
+	if isBot || userID == 0 {
+		if authorName != nil && *authorName != "" {
+			return *authorName
+		}
+		return ""
 	}
-	return ""
+	name := ""
+	if authorName != nil {
+		name = *authorName
+	}
+	if name == "" {
+		return fmt.Sprintf("user id: %d", userID)
+	}
+	return fmt.Sprintf("%s (user id: %d)", name, userID)
 }
 
 func (cb *ContextBuilder) truncateContent(content string) string {
