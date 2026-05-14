@@ -5,8 +5,8 @@ Operator guide for deploying, operating, and recovering the I.R.I.S Discord bot.
 ## Prerequisites
 
 - Docker 24+ and Docker Compose plugin v2.
-- Outbound HTTPS to `discord.com`, `api.openai.com` (or configured provider), and `wutheringwaves.fandom.com`.
-- A Discord application with a bot user, invited with the `bot` scope and permissions for Send Messages, Embed Links, Read Message History, and Attach Files.
+- Outbound HTTPS to `discord.com`, the configured OpenAI-compatible provider, and `wutheringwaves.fandom.com` for lore ingestion. SearXNG runs locally through Docker Compose for web-search tooling.
+- A Discord application with a bot user, invited with the `bot` and `applications.commands` scopes and permissions for Send Messages, Embed Links, Read Message History, Attach Files, Add Reactions, Manage Messages, and Use Application Commands.
 - An OpenAI-compatible API key with budget for chat completions.
 - Roughly 1 GB disk for the Postgres data volume under normal load.
 
@@ -43,13 +43,7 @@ On a fresh database the `migrate` compose service applies `migrations/001_init.s
 docker compose run --rm migrate
 ```
 
-To seed lore from the Wuthering Waves Wiki, trigger the ingestion job (if enabled) or run the `cmd/lore-ingest` binary once it is wired into your environment:
-
-```
-docker compose exec bot /app/iris-bot ingest --source wiki
-```
-
-(Ingestion is an offline batch; it does not need to run on every boot.)
+Lore content is read from the indexed database tables used by the RAG pipeline. If you refresh lore data, run the repository's ingestion/backfill workflow for your deployment and then verify `lore_chunks` contains current rows. Ingestion is an offline batch; it does not need to run on every boot.
 
 ## Operating the Bot
 
@@ -89,6 +83,8 @@ Edit `.env` on the host, then restart the bot container:
 ```
 docker compose up -d bot
 ```
+
+Guild-scoped settings are changed through slash commands such as `/iris-config`, `/iris-ratelimit`, `/iris-allowed`, `/iris-exception`, and `/iris-lore`. Owner-gated runtime model and MCP changes are requested in natural language by the Discord user whose ID matches `IRIS_OWNER_ID`.
 
 ## Backup & Restore
 
@@ -151,7 +147,7 @@ Checks:
 4. From the bot container: `docker compose exec bot sh -c 'pg_isready -h postgres -U "$POSTGRES_USER"'`.
 5. If the volume is corrupted and you have a backup, restore per the *Backup & Restore* section.
 
-### OpenAI provider failure
+### LLM provider failure
 
 Symptoms: replies fail with `llm: request failed`, 5xx from the provider, or empty completions.
 
@@ -160,17 +156,17 @@ Checks:
 1. `docker compose logs bot | grep -i llm` for the exact error.
 2. Confirm `OPENAI_API_KEY` is valid and has budget.
 3. If using a self-hosted or proxy provider, confirm `LLM_BASE_URL` is reachable from the bot container.
-4. Bump `LLM_TIMEOUT` and `LLM_MAX_RETRIES` temporarily if the upstream is slow.
+4. Bump `LLM_CHAT_TIMEOUT`, `LLM_TOOL_TIMEOUT`, and `LLM_MAX_RETRIES` temporarily if the upstream is slow. `LLM_TIMEOUT` remains a legacy fallback.
 5. For repeated 429s, see *rate-limit exhaustion* below.
 
 ### Rate-limit exhaustion
 
-Symptoms: `429` from the LLM provider or Discord, responses get dropped, `!iris ratelimit` reports hits.
+Symptoms: `429` from the LLM provider or Discord, responses get dropped, or `/iris-ratelimit` reports a tight channel setting.
 
 Checks:
 
-1. Inspect current limits: `!iris ratelimit get` in an admin channel.
-2. Lower the per-guild or per-user limit if a single guild is burning the budget: `!iris ratelimit set guild 30`.
+1. Inspect current limits: `/iris-ratelimit get channel_id:<channelID>` in an admin channel.
+2. Lower a noisy channel's rate if it is burning the budget: `/iris-ratelimit set channel_id:<channelID> rate:<rate>`.
 3. For provider 429s, reduce concurrent requests by lowering `LLM_MAX_TOKENS` or slow the worker pool.
 4. If the Discord rate limit is hit, confirm the bot is not fan-out posting to many channels at once. Batch admin announcements.
 
@@ -181,13 +177,13 @@ Symptoms: audit log entries tagged `memory_injection_attempt` or `persona_overri
 Checks:
 
 1. These are expected and should be neutralized by the safety layer. Confirm the bot's response did not change language or persona in the affected thread.
-2. Review the memory row for the user: `!iris memory show <userID>` (if enabled) or inspect `memory_records` in Postgres.
+2. Review scoped memory directly in Postgres (`memory_records` for per-user facts and `channel_messages` for guild recall inputs).
 3. If malicious content leaked through, open an incident, redact the row, and tighten the injection filter in `internal/safety`.
 4. Consider banning the user at the guild level if repeated.
 
-### Image generation failures
+### Image or attachment response failures
 
-Symptoms: `/iris image` returns an error, logs show `image: provider error` or `image: safety block`.
+Symptoms: an image-capable response returns the Indonesian image fallback, logs show `image: provider error` or `image: safety block`, or Discord rejects an attachment.
 
 Checks:
 
