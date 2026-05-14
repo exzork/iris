@@ -344,8 +344,22 @@ func (o *Orchestrator) handle(j job) {
 		ctx = WithCallerUserID(ctx, event.UserID)
 	}
 
+	// Determine if channel capture is allowed based on allowlist
+	captureAllowed := true
+	if o.cfg.Capture != nil && o.cfg.AllowedQuerier != nil && event.GuildID > 0 && event.ChannelID > 0 {
+		checkCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		ok, err := o.cfg.AllowedQuerier.IsAllowed(checkCtx, event.GuildID, event.ChannelID)
+		cancel()
+		if err != nil {
+			slog.DebugContext(ctx, "channel_capture_allowlist_check_failed", "guild", event.GuildID, "channel", event.ChannelID, "err", err)
+			captureAllowed = false
+		} else {
+			captureAllowed = ok
+		}
+	}
+
 	// Capture incoming user message for context window (before router decision)
-	if o.cfg.Capture != nil && event.Message != nil && event.GuildID > 0 && event.ChannelID > 0 {
+	if o.cfg.Capture != nil && event.Message != nil && event.GuildID > 0 && event.ChannelID > 0 && captureAllowed {
 		authorName := event.Message.AuthorName
 		if authorName == nil {
 			authorName = event.AuthorName
@@ -647,7 +661,7 @@ func (o *Orchestrator) handle(j job) {
 		}
 	}
 
-	if o.cfg.Capture != nil && event.GuildID > 0 && event.ChannelID > 0 {
+	if o.cfg.Capture != nil && event.GuildID > 0 && event.ChannelID > 0 && captureAllowed {
 		syntheticMsgID := -(time.Now().UnixNano() % 9223372036854775807)
 		botMsg := &domain.ChannelMessage{
 			GuildID:   event.GuildID,

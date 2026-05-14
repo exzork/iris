@@ -78,6 +78,33 @@ func (f *integrationTestChannelCapture) Capture(ctx context.Context, msg *domain
 	return nil
 }
 
+type fakeAllowedQuerier struct {
+	allowedChannels map[int64]bool
+}
+
+func (f *fakeAllowedQuerier) IsAllowed(ctx context.Context, guildID int64, channelID int64) (bool, error) {
+	if f == nil || f.allowedChannels == nil {
+		return false, nil
+	}
+	return f.allowedChannels[channelID], nil
+}
+
+func (f *fakeAllowedQuerier) ListByGuild(ctx context.Context, guildID int64) ([]int64, error) {
+	return []int64{}, nil
+}
+
+func (f *fakeAllowedQuerier) Add(ctx context.Context, guildID int64, channelID int64) error {
+	return nil
+}
+
+func (f *fakeAllowedQuerier) Remove(ctx context.Context, guildID int64, channelID int64) error {
+	return nil
+}
+
+func (f *fakeAllowedQuerier) HasAny(ctx context.Context, guildID int64) (bool, error) {
+	return false, nil
+}
+
 type integrationTestDecider struct {
 	shouldReply bool
 }
@@ -620,5 +647,160 @@ func TestOrchestrator_DMNotCaptured(t *testing.T) {
 
 	if len(capture.captured) != 0 {
 		t.Fatalf("expected no captured messages for DM, got %d", len(capture.captured))
+	}
+}
+
+func TestOrchestrator_CaptureRespectsAllowlist(t *testing.T) {
+	cases := []struct {
+		name              string
+		allowedQuerier    *fakeAllowedQuerier
+		guildID           int64
+		channelID         int64
+		expectCaptured    int
+		description       string
+	}{
+		{
+			name: "allowlisted channel captures both user and bot messages",
+			allowedQuerier: &fakeAllowedQuerier{
+				allowedChannels: map[int64]bool{67890: true},
+			},
+			guildID:        12345,
+			channelID:      67890,
+			expectCaptured: 2,
+			description:    "user message + bot reply",
+		},
+		{
+			name: "non-allowlisted channel captures nothing",
+			allowedQuerier: &fakeAllowedQuerier{
+				allowedChannels: map[int64]bool{},
+			},
+			guildID:        12345,
+			channelID:      67890,
+			expectCaptured: 0,
+			description:    "no captures when channel not in allowlist",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			capture := &integrationTestChannelCapture{}
+			decider := &integrationTestDecider{shouldReply: true}
+			contextStore := &integrationTestContextStore{}
+			llmCaller := &integrationTestLLMCaller{}
+			sender := &integrationTestMessageSender{}
+
+			cfg := Config{
+				Router:         decider,
+				LLM:            llmCaller,
+				Discord:        sender,
+				ContextStore:   contextStore,
+				Capture:        capture,
+				AllowedQuerier: tc.allowedQuerier,
+				SystemPrompt:   "test system prompt",
+				QueueSize:      128,
+				WorkerCount:    1,
+				JobTimeout:     5 * time.Second,
+			}
+
+			orch := New(cfg)
+			orch.Start()
+			defer orch.Stop()
+
+			event := &domain.DiscordEvent{
+				GuildID:   tc.guildID,
+				ChannelID: tc.channelID,
+				UserID:    111,
+				Message: &domain.DiscordMessage{
+					ID:      999,
+					Content: "test message",
+				},
+			}
+
+			err := orch.Enqueue(context.Background(), event)
+			if err != nil {
+				t.Fatalf("failed to enqueue: %v", err)
+			}
+
+			time.Sleep(1 * time.Second)
+
+			capture.mu.Lock()
+			defer capture.mu.Unlock()
+
+			if len(capture.captured) != tc.expectCaptured {
+				t.Fatalf("%s: expected %d captured messages, got %d", tc.description, tc.expectCaptured, len(capture.captured))
+			}
+
+			if tc.expectCaptured == 2 {
+				if capture.captured[0].IsBot {
+					t.Fatalf("first message should be user message (IsBot=false), got IsBot=true")
+				}
+				if capture.captured[0].Content != "test message" {
+					t.Fatalf("first message content mismatch: got %q", capture.captured[0].Content)
+				}
+
+				if !capture.captured[1].IsBot {
+					t.Fatalf("second message should be bot message (IsBot=true), got IsBot=false")
+				}
+				if capture.captured[1].Content != "test response" {
+					t.Fatalf("second message content mismatch: got %q", capture.captured[1].Content)
+				}
+			}
+		})
+	}
+}
+
+func TestOrchestrator_NilAllowedQuerierCaptures(t *testing.T) {
+	capture := &integrationTestChannelCapture{}
+	decider := &integrationTestDecider{shouldReply: true}
+	contextStore := &integrationTestContextStore{}
+	llmCaller := &integrationTestLLMCaller{}
+	sender := &integrationTestMessageSender{}
+
+	cfg := Config{
+		Router:         decider,
+		LLM:            llmCaller,
+		Discord:        sender,
+		ContextStore:   contextStore,
+		Capture:        capture,
+		AllowedQuerier: nil,
+		SystemPrompt:   "test system prompt",
+		QueueSize:      128,
+		WorkerCount:    1,
+		JobTimeout:     5 * time.Second,
+	}
+
+	orch := New(cfg)
+	orch.Start()
+	defer orch.Stop()
+
+	event := &domain.DiscordEvent{
+		GuildID:   12345,
+		ChannelID: 67890,
+		UserID:    111,
+		Message: &domain.DiscordMessage{
+			ID:      999,
+			Content: "test message",
+		},
+	}
+
+	err := orch.Enqueue(context.Background(), event)
+	if err != nil {
+		t.Fatalf("failed to enqueue: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	capture.mu.Lock()
+	defer capture.mu.Unlock()
+
+	if len(capture.captured) != 2 {
+		t.Fatalf("expected 2 captured messages with nil AllowedQuerier (backward compat), got %d", len(capture.captured))
+	}
+
+	if capture.captured[0].IsBot {
+		t.Fatalf("first message should be user message (IsBot=false), got IsBot=true")
+	}
+	if !capture.captured[1].IsBot {
+		t.Fatalf("second message should be bot message (IsBot=true), got IsBot=false")
 	}
 }
