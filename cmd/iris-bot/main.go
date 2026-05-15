@@ -583,6 +583,7 @@ func main() {
 		ConversationRefresher: convRepo,
 		Capture:               capturePort,
 		GuildMemory:           guildRecallSvc,
+		CuratedMemory:         &wireadapters.CuratedMemoryAdapter{Repo: memoryRepo, Embedder: emb, MinScore: 0.40},
 		UserBehavior:          behaviorProfileSvc,
 		BehaviorUpdater:       behaviorUpdateAdapter,
 		LoreCapturer:          loreCapturer,

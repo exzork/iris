@@ -67,10 +67,10 @@ func (r *MemoryRepo) GetByGuild(ctx context.Context, guildID int64, limit int) (
 
 func (r *MemoryRepo) SearchSimilar(ctx context.Context, guildID int64, embedding []float32, limit int) ([]domain.MemoryRecord, error) {
 	sql := `
-		SELECT id, guild_id, content, embedding, created_at, updated_at
+		SELECT id, guild_id, user_id, content, embedding, 1 - (embedding <=> $2) AS similarity, created_at, updated_at
 		FROM memory_records
 		WHERE guild_id = $1
-		ORDER BY embedding <-> $2
+		ORDER BY embedding <=> $2
 		LIMIT $3
 	`
 	vec := pgvector.NewVector(embedding)
@@ -84,11 +84,17 @@ func (r *MemoryRepo) SearchSimilar(ctx context.Context, guildID int64, embedding
 	for rows.Next() {
 		var record domain.MemoryRecord
 		var vec pgvector.Vector
-		err := rows.Scan(&record.ID, &record.GuildID, &record.Content, &vec, &record.CreatedAt, &record.UpdatedAt)
+		var userID *int64
+		var similarity float64
+		err := rows.Scan(&record.ID, &record.GuildID, &userID, &record.Content, &vec, &similarity, &record.CreatedAt, &record.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan memory record: %w", err)
 		}
+		if userID != nil {
+			record.UserID = *userID
+		}
 		record.Embedding = vec.Slice()
+		record.Similarity = similarity
 		records = append(records, record)
 	}
 	return records, nil

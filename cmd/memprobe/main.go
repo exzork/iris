@@ -25,14 +25,16 @@ import (
 
 func main() {
 	guildID := flag.Int64("guild", 0, "guild id (required)")
-	userID := flag.Int64("user", 0, "user id (required)")
-	channelID := flag.Int64("channel", 0, "channel id (required)")
+	userID := flag.Int64("user", 0, "user id (required for save mode)")
+	channelID := flag.Int64("channel", 0, "channel id (required for save mode)")
 	userMessage := flag.String("user-message", "iris, tolong ingat ingat, waifu gw denia", "user message text")
 	botResponse := flag.String("bot-response", "Oke, noted. Waifu kamu Denia. Udah aku catat di arsip.", "simulated bot response")
+	mode := flag.String("mode", "save", "save | recall")
+	recallQuery := flag.String("query", "", "recall query (mode=recall)")
 	flag.Parse()
 
-	if *guildID == 0 || *userID == 0 || *channelID == 0 {
-		fmt.Fprintln(os.Stderr, "guild, user, channel are required")
+	if *guildID == 0 {
+		fmt.Fprintln(os.Stderr, "guild is required")
 		os.Exit(2)
 	}
 
@@ -64,6 +66,33 @@ func main() {
 		os.Exit(1)
 	}
 	defer emb.Close()
+
+	if *mode == "recall" {
+		if *recallQuery == "" {
+			fmt.Fprintln(os.Stderr, "query is required for mode=recall")
+			os.Exit(2)
+		}
+		vec, err := emb.Embed(ctx, *recallQuery)
+		if err != nil {
+			slog.Error("embed", "err", err)
+			os.Exit(1)
+		}
+		results, err := memoryRepo.SearchSimilar(ctx, *guildID, vec, 10)
+		if err != nil {
+			slog.Error("search", "err", err)
+			os.Exit(1)
+		}
+		fmt.Printf("query=%q hits=%d\n", *recallQuery, len(results))
+		for i, r := range results {
+			fmt.Printf("  [%d] sim=%.4f user=%d content=%q\n", i, r.Similarity, r.UserID, r.Content)
+		}
+		return
+	}
+
+	if *userID == 0 || *channelID == 0 {
+		fmt.Fprintln(os.Stderr, "user, channel are required for mode=save")
+		os.Exit(2)
+	}
 
 	memSvc := memory.NewMemoryService(memory.Config{
 		Embed: emb,

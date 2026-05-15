@@ -122,7 +122,8 @@ type Config struct {
 	ConversationRefresher  repository.ChannelConversationQuerier
 	AllowedQuerier         repository.AllowedChannelQuerier
 	Capture                ChannelCapture  // optional; if nil, skip persistence
-	GuildMemory            GuildMemorySource // optional; if nil, skip guild recall
+	GuildMemory            GuildMemorySource    // optional; if nil, skip guild recall
+	CuratedMemory          CuratedMemorySource  // optional; if nil, skip durable memory_records recall
 	UserBehavior           UserBehaviorSource // optional; if nil, skip user behavior hints
 	BehaviorUpdater        BehaviorUpdater // optional; if nil, skip behavior learning
 	LoreCapturer           LoreCapturer // optional; if nil, skip lore capture
@@ -228,6 +229,9 @@ func New(cfg Config) *Orchestrator {
 	})
 	if cfg.GuildMemory != nil {
 		contextBuilder.WithGuildMemory(cfg.GuildMemory)
+	}
+	if cfg.CuratedMemory != nil {
+		contextBuilder.WithCuratedMemory(cfg.CuratedMemory)
 	}
 	if cfg.UserBehavior != nil {
 		contextBuilder.WithUserBehavior(cfg.UserBehavior)

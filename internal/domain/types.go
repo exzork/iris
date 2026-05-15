@@ -31,12 +31,14 @@ type GuildConfig struct {
 
 // MemoryRecord represents a stored memory entry for a guild.
 type MemoryRecord struct {
-	ID        int64
-	GuildID   int64
-	Content   string
-	Embedding []float32
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID         int64
+	GuildID    int64
+	UserID     int64
+	Content    string
+	Embedding  []float32
+	Similarity float64
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // ToolRequest represents a request to execute a tool.
