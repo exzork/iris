@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -36,14 +37,17 @@ func downloadMediaFiles(ctx context.Context, client *http.Client, urls []string)
 		client = &http.Client{Timeout: mediaDownloadTimeout}
 	}
 	if err := os.MkdirAll(mediaCacheDir, 0o755); err != nil {
+		slog.WarnContext(ctx, "media_cache_mkdir_failed", "dir", mediaCacheDir, "err", err.Error())
 		return nil
 	}
 	files := make([]MediaFile, 0, len(urls))
 	for _, raw := range urls {
 		f, err := downloadMediaFile(ctx, client, raw)
 		if err != nil {
+			slog.WarnContext(ctx, "media_download_skipped", "url", raw, "err", err.Error())
 			continue
 		}
+		slog.DebugContext(ctx, "media_download_ok", "url", raw, "name", f.Name, "bytes", len(f.Bytes))
 		files = append(files, f)
 	}
 	return files

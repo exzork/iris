@@ -406,17 +406,60 @@ func (e *RegistryExecutor) Execute(ctx context.Context, name string, args map[st
 	if e.Reg == nil {
 		return "", nil
 	}
+	logger := slog.Default()
+	argsForLog := summarizeArgs(args)
+	logger.InfoContext(ctx, "tool_call_start", "tool", name, "args", argsForLog)
+	start := time.Now()
 	res := e.Reg.Execute(ctx, tools.ExecuteRequest{
-		Tool:   name,
-		Args:   args,
+		Tool:    name,
+		Args:    args,
 		GuildID: 0,
-		UserID: 0,
-		Caller: tools.CallerContext{IsAdmin: false},
+		UserID:  0,
+		Caller:  tools.CallerContext{IsAdmin: false},
 	})
+	elapsedMS := time.Since(start).Milliseconds()
 	if res.Err != nil {
+		logger.WarnContext(ctx, "tool_call_error",
+			"tool", name,
+			"args", argsForLog,
+			"elapsed_ms", elapsedMS,
+			"err", res.Err.Error(),
+		)
 		return "", res.Err
 	}
+	outputLen := len(res.Output)
+	preview := res.Output
+	if outputLen > 600 {
+		preview = res.Output[:600] + "...[truncated]"
+	}
+	logger.InfoContext(ctx, "tool_call_result",
+		"tool", name,
+		"args", argsForLog,
+		"elapsed_ms", elapsedMS,
+		"output_len", outputLen,
+		"output_preview", preview,
+	)
 	return res.Output, nil
+}
+
+func summarizeArgs(args map[string]interface{}) map[string]interface{} {
+	if len(args) == 0 {
+		return nil
+	}
+	out := make(map[string]interface{}, len(args))
+	for k, v := range args {
+		switch val := v.(type) {
+		case string:
+			if len(val) > 200 {
+				out[k] = val[:200] + "...[truncated]"
+				continue
+			}
+			out[k] = val
+		default:
+			out[k] = val
+		}
+	}
+	return out
 }
 
 type StreamLLMAdapter struct {

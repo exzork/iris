@@ -667,6 +667,11 @@ func (o *Orchestrator) handle(j job) {
 		knownIDs, usernameToID := collectKnownUserMap(event.UserID, triggerName, messages)
 		safeResp := scrubOutbound(resp, knownIDs, usernameToID)
 		textOnly, mediaURLs := extractMediaURLs(safeResp)
+		slog.InfoContext(ctx, "media_extract",
+			"raw_response_len", len(safeResp),
+			"text_only_len", len(textOnly),
+			"media_urls", mediaURLs,
+		)
 		if textOnly == "" && len(mediaURLs) > 0 {
 			textOnly = " "
 		}
@@ -695,7 +700,9 @@ func (o *Orchestrator) handle(j job) {
 		}
 		if len(mediaURLs) > 0 {
 			if fs, ok := o.cfg.Discord.(FileSender); ok {
+				slog.InfoContext(ctx, "media_download_start", "urls", len(mediaURLs))
 				downloaded := downloadMediaFiles(ctx, nil, mediaURLs)
+				slog.InfoContext(ctx, "media_download_done", "urls", len(mediaURLs), "downloaded", len(downloaded))
 				if len(downloaded) > 0 {
 					files := make([]FileAttachment, 0, len(downloaded))
 					for _, f := range downloaded {
@@ -704,9 +711,12 @@ func (o *Orchestrator) handle(j job) {
 							ContentType: f.ContentType,
 							Bytes:       f.Bytes,
 						})
+						slog.DebugContext(ctx, "media_file_prepared", "name", f.Name, "content_type", f.ContentType, "bytes", len(f.Bytes))
 					}
 					if err := fs.SendFiles(ctx, event.GuildID, event.ChannelID, files); err != nil {
 						slog.WarnContext(ctx, "media_file_send_failed", "guild", event.GuildID, "channel", event.ChannelID, "err", err)
+					} else {
+						slog.InfoContext(ctx, "media_files_sent", "count", len(files))
 					}
 				} else {
 					slog.WarnContext(ctx, "media_download_empty", "urls", len(mediaURLs))
