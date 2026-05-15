@@ -60,17 +60,38 @@ type EpisodeArchiver interface {
 	Archive(ctx context.Context, guildID int64, messages []*domain.ChannelMessage, taggedLines []string, resolver ChannelNameResolver) error
 }
 
-// ContextBuilder assembles LLM context from Discord events and channel history.
+type LoreCitation struct {
+	Title string
+	URL   string
+}
+
+type LoreSnippet struct {
+	Title string
+	URL   string
+	Score float64
+	Text  string
+}
+
+// LoreContextProvider returns wiki snippets relevant to the current user query.
+// It is consulted unconditionally on every triggered message; implementations
+// should embed the query, search wiki_chunks, and return the top-K snippets
+// plus deduplicated citations. A nil-but-no-error result means "no usable
+// support found" and the builder will skip injection.
+type LoreContextProvider interface {
+	LoreContext(ctx context.Context, query string) (snippets []LoreSnippet, citations []LoreCitation, err error)
+}
+
 type ContextBuilder struct {
-	cfg              ContextBuilderConfig
-	recall           GuildMemorySource
-	behavior         UserBehaviorSource
-	allowed          AllowedChannelLister
-	nameResolver     ChannelNameResolver
-	compactor        Compactor
-	archiver         EpisodeArchiver
+	cfg                ContextBuilderConfig
+	recall             GuildMemorySource
+	behavior           UserBehaviorSource
+	allowed            AllowedChannelLister
+	nameResolver       ChannelNameResolver
+	compactor          Compactor
+	archiver           EpisodeArchiver
 	loreAnchorResolver LoreAnchorResolver
-	loreCompactor    *LoreCompactor
+	loreCompactor      *LoreCompactor
+	loreProvider       LoreContextProvider
 }
 
 // NewContextBuilder creates a new context builder with the given config.
@@ -105,6 +126,11 @@ func (cb *ContextBuilder) WithLoreAnchorResolver(r LoreAnchorResolver) *ContextB
 
 func (cb *ContextBuilder) WithLoreCompactor(lc *LoreCompactor) *ContextBuilder {
 	cb.loreCompactor = lc
+	return cb
+}
+
+func (cb *ContextBuilder) WithLoreContext(p LoreContextProvider) *ContextBuilder {
+	cb.loreProvider = p
 	return cb
 }
 
@@ -273,6 +299,12 @@ func (cb *ContextBuilder) build(
 				"content": hint,
 			})
 		}
+		if loreBlock := cb.buildWikiLoreBlock(ctx, event); loreBlock != "" {
+			messages = append(messages, map[string]string{
+				"role":    "system",
+				"content": loreBlock,
+			})
+		}
 		currentRendered := cb.renderCurrentMessage(event)
 		messages = append(messages, map[string]string{
 			"role":    "user",
@@ -353,6 +385,41 @@ func (cb *ContextBuilder) buildBehaviorHintBlock(ctx context.Context, event *dom
 		fmt.Fprintf(&sb, "- recurring interests: %s\n", strings.Join(profile.RecurringTopics, ", "))
 	}
 	sb.WriteString("[END USER INTERACTION HINTS]")
+	return sb.String()
+}
+
+func (cb *ContextBuilder) buildWikiLoreBlock(ctx context.Context, event *domain.DiscordEvent) string {
+	if cb.loreProvider == nil || event == nil || event.Message == nil {
+		return ""
+	}
+	query := strings.TrimSpace(event.Message.Content)
+	if query == "" {
+		return ""
+	}
+	snippets, citations, err := cb.loreProvider.LoreContext(ctx, query)
+	if err != nil {
+		slog.WarnContext(ctx, "wiki_lore_context_failed", "error", err.Error())
+		return ""
+	}
+	if len(snippets) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	sb.WriteString("[WIKI GROUNDING - WUTHERING WAVES FANDOM]\n")
+	sb.WriteString("Use these snippets as the authoritative source when answering lore questions. If you cite facts from them, include at least one citation in the format `Title, url` from the citations list.\n")
+	for i, sn := range snippets {
+		text := sn.Text
+		if cap := cb.cfg.PerMessageCharCap; cap > 0 && utf8.RuneCountInString(text) > cap {
+			text = truncateRunesCB(text, cap)
+		}
+		fmt.Fprintf(&sb, "[%d] %s (score=%.2f)\n%s\n", i+1, sn.Title, sn.Score, text)
+	}
+	sb.WriteString("Citations:\n")
+	for _, c := range citations {
+		fmt.Fprintf(&sb, "- %s, %s\n", c.Title, c.URL)
+	}
+	sb.WriteString("[END WIKI GROUNDING]")
 	return sb.String()
 }
 

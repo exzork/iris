@@ -5,6 +5,7 @@ import (
 
 	"github.com/eko/iris-bot/internal/lore/ingest"
 	"github.com/eko/iris-bot/internal/lore/rag"
+	"github.com/eko/iris-bot/internal/orchestrator"
 	"github.com/eko/iris-bot/internal/repository"
 )
 
@@ -104,4 +105,44 @@ func (a *WikiRetrievalAdapter) SearchSimilar(ctx context.Context, embedding []fl
 		})
 	}
 	return out, nil
+}
+
+type WikiLoreContextAdapter struct {
+	Composer *rag.Composer
+}
+
+func (a *WikiLoreContextAdapter) LoreContext(ctx context.Context, query string) ([]orchestrator.LoreSnippet, []orchestrator.LoreCitation, error) {
+	if a.Composer == nil {
+		return nil, nil, nil
+	}
+	promptCtx, _, err := a.Composer.Compose(ctx, query)
+	if err != nil {
+		return nil, nil, err
+	}
+	if promptCtx == nil || !promptCtx.HasSupport {
+		return nil, nil, nil
+	}
+
+	snippets := make([]orchestrator.LoreSnippet, 0, len(promptCtx.Snippets))
+	for i, text := range promptCtx.Snippets {
+		var title, url string
+		if i < len(promptCtx.Citations) {
+			title = promptCtx.Citations[i].Title
+			url = promptCtx.Citations[i].URL
+		}
+		snippets = append(snippets, orchestrator.LoreSnippet{
+			Title: title,
+			URL:   url,
+			Text:  text,
+		})
+	}
+
+	citations := make([]orchestrator.LoreCitation, 0, len(promptCtx.Citations))
+	for _, c := range promptCtx.Citations {
+		citations = append(citations, orchestrator.LoreCitation{
+			Title: c.Title,
+			URL:   c.URL,
+		})
+	}
+	return snippets, citations, nil
 }

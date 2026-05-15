@@ -586,6 +586,7 @@ func main() {
 		Compactor:             &wireadapters.LLMCompactor{Client: chatClient, Model: cfg.LLMModelDefault},
 		EpisodeArchiver:       &wireadapters.EpisodeArchiverAdapter{Repo: episodeRepo, Embedder: emb, EmbeddingModel: "onnx-e5-small-384"},
 		LoreAnchorResolver:    &wireadapters.LoreThreadAnchorResolverAdapter{Repo: loreThreadAnchorRepo},
+		LoreContext:           &wireadapters.WikiLoreContextAdapter{Composer: composer},
 		LoreCaptureTimeout:    cfg.LoreCaptureTimeout,
 	}
 

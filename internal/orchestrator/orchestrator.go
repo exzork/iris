@@ -115,6 +115,7 @@ type Config struct {
 	EpisodeArchiver      EpisodeArchiver      // optional; persists stash-style episodes before compaction squashes them
 	LoreAnchorResolver   LoreAnchorResolver   // optional; resolves lore thread anchor metadata
 	LoreCompactor        *LoreCompactor       // optional; applies 70% retention compaction for lore threads
+	LoreContext          LoreContextProvider  // optional; injects wiki snippets into the prompt every triggered message
 	LoreCaptureTimeout   time.Duration        // optional; timeout for per-message lore capture. 0 = no deadline
 }
 
@@ -211,6 +212,9 @@ func New(cfg Config) *Orchestrator {
 	}
 	if cfg.LoreCompactor != nil {
 		contextBuilder.WithLoreCompactor(cfg.LoreCompactor)
+	}
+	if cfg.LoreContext != nil {
+		contextBuilder.WithLoreContext(cfg.LoreContext)
 	}
 
 	return &Orchestrator{
