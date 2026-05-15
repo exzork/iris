@@ -30,6 +30,39 @@ func WithMeta(ctx context.Context, meta *ContextMeta) context.Context {
 	return context.WithValue(ctx, contextMetaKey{}, meta)
 }
 
+// MergeMeta layers patch on top of any existing ContextMeta in ctx so that
+// callers (e.g. the LLM client annotating TriggerReason) do not clobber
+// upstream-provided ChannelID/UserID/MessageID. Empty fields in patch leave
+// the existing values intact.
+func MergeMeta(ctx context.Context, patch *ContextMeta) context.Context {
+	if patch == nil {
+		return ctx
+	}
+	merged := &ContextMeta{}
+	if existing := MetaFromContext(ctx); existing != nil {
+		*merged = *existing
+	}
+	if patch.GuildID != 0 {
+		merged.GuildID = patch.GuildID
+	}
+	if patch.ChannelID != 0 {
+		merged.ChannelID = patch.ChannelID
+	}
+	if patch.MessageID != 0 {
+		merged.MessageID = patch.MessageID
+	}
+	if patch.UserID != 0 {
+		merged.UserID = patch.UserID
+	}
+	if patch.Tier != "" {
+		merged.Tier = patch.Tier
+	}
+	if patch.TriggerReason != "" {
+		merged.TriggerReason = patch.TriggerReason
+	}
+	return context.WithValue(ctx, contextMetaKey{}, merged)
+}
+
 // MetaFromContext retrieves ContextMeta from ctx, or nil if not set.
 func MetaFromContext(ctx context.Context) *ContextMeta {
 	v, _ := ctx.Value(contextMetaKey{}).(*ContextMeta)

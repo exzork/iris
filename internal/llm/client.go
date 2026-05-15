@@ -242,7 +242,7 @@ func (c *Client) ChatStream(
 		requestID = corrID
 	}
 
-	ctx = WithMeta(ctx, &ContextMeta{
+	ctx = MergeMeta(ctx, &ContextMeta{
 		TriggerReason: "chat_stream",
 		GuildID:       guildID,
 	})
@@ -300,7 +300,7 @@ func (c *Client) ChatWithToolsStream(
 		requestID = corrID
 	}
 
-	ctx = WithMeta(ctx, &ContextMeta{
+	ctx = MergeMeta(ctx, &ContextMeta{
 		TriggerReason: "chat_with_tools_stream",
 		GuildID:       cfg.GuildID,
 	})
@@ -487,7 +487,7 @@ func (c *Client) ChatWithTools(ctx context.Context, messages []map[string]string
 	}
 
 	// Attach audit metadata
-	ctx = WithMeta(ctx, &ContextMeta{
+	ctx = MergeMeta(ctx, &ContextMeta{
 		TriggerReason: "chat_with_tools",
 		GuildID:       cfg.GuildID,
 	})
