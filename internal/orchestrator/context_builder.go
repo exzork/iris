@@ -76,7 +76,8 @@ type LoreSnippet struct {
 // It is consulted unconditionally on every triggered message; implementations
 // should embed the query, search wiki_chunks, and return the top-K snippets
 // plus deduplicated citations. A nil-but-no-error result means "no usable
-// support found" and the builder will skip injection.
+// support found" and the builder will inject a "no canonical data; call
+// web_search before answering" directive instead.
 type LoreContextProvider interface {
 	LoreContext(ctx context.Context, query string) (snippets []LoreSnippet, citations []LoreCitation, err error)
 }
@@ -402,14 +403,20 @@ func (cb *ContextBuilder) buildWikiLoreBlock(ctx context.Context, event *domain.
 		return ""
 	}
 	if len(snippets) == 0 {
-		return ""
+		var sb strings.Builder
+		sb.WriteString("[WIKI GROUNDING - NO CANONICAL SUPPORT FOUND]\n")
+		sb.WriteString("Local wiki retrieval found no relevant snippets for this query. Before answering with any factual claim about Wuthering Waves lore, characters, items, quests, or mechanics, you MUST call the `web_search` tool with a query that includes 'Wuthering Waves' or 'wuwa' as a keyword (e.g. `Denia Wuthering Waves`, not just `Denia`).\n")
+		sb.WriteString("If `web_search` also returns nothing relevant, admit you do not have canonical data. Do NOT invent backstory, role, faction, region, abilities, or any factual claim from prior knowledge.\n")
+		sb.WriteString("Casual chat (greetings, jokes, opinions, non-lore questions) does not require web_search.\n")
+		sb.WriteString("[END WIKI GROUNDING]")
+		return sb.String()
 	}
 
 	var sb strings.Builder
 	sb.WriteString("[WIKI GROUNDING - WUTHERING WAVES FANDOM]\n")
 	sb.WriteString("These snippets are the ONLY canonical source you may rely on for this answer. Rules:\n")
 	sb.WriteString("- If a snippet directly addresses the entity, item, quest, or concept the user asked about, you MAY use it as canonical fact and cite it as `Title, url`.\n")
-	sb.WriteString("- If NONE of the snippets actually mention or discuss what the user asked about, you MUST say you do not have canonical data on it. Do NOT invent backstory, role, faction, region, or any factual claim from prior knowledge.\n")
+	sb.WriteString("- If NONE of the snippets actually mention or discuss what the user asked about, call `web_search` with a query that includes 'Wuthering Waves' as a keyword. Do NOT invent backstory, role, faction, region, or any factual claim from prior knowledge.\n")
 	sb.WriteString("- Snippets are ranked by similarity, not relevance. A high rank does NOT mean the snippet is on-topic; verify the topic match yourself before quoting.\n")
 	for i, sn := range snippets {
 		text := sn.Text

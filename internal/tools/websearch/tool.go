@@ -24,7 +24,7 @@ func New(p Provider) *Tool {
 func (t *Tool) Schema() *tools.Schema {
 	return &tools.Schema{
 		Name:        "web_search",
-		Description: "Search the web for recent information. Not canon for Wuthering Waves unless source is authoritative.",
+		Description: "Search the web for recent information. For Wuthering Waves lore queries (characters, NPCs, quests, items, regions, mechanics, story), ALWAYS include 'Wuthering Waves' or 'wuwa' as a keyword in the query, e.g. 'Denia Wuthering Waves' instead of just 'Denia'. Not canon for Wuthering Waves unless source is authoritative.",
 		Fields: []tools.FieldSpec{
 			{
 				Name:        "query",
