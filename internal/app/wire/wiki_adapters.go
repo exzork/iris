@@ -2,6 +2,8 @@ package wire
 
 import (
 	"context"
+	"regexp"
+	"strings"
 
 	"github.com/eko/iris-bot/internal/lore/ingest"
 	"github.com/eko/iris-bot/internal/lore/rag"
@@ -111,11 +113,36 @@ type WikiLoreContextAdapter struct {
 	Composer *rag.Composer
 }
 
+var (
+	reBotMention    = regexp.MustCompile(`<@!?\d+>`)
+	reBotKeyword    = regexp.MustCompile(`(?i)\biris\b[\s,:.!?]*`)
+	reLeadingPunct  = regexp.MustCompile(`^[\s,:.!?]+`)
+	reTrailingPunct = regexp.MustCompile(`[\s,:.!?]+$`)
+	reCollapseWS    = regexp.MustCompile(`\s+`)
+)
+
+// sanitizeQueryForEmbedding strips Discord mentions and the "iris" trigger
+// keyword from the user query before embedding. The bot keyword pulls the
+// vector toward unrelated wiki pages that happen to mention "iris" or
+// punctuation; the LLM still sees the original message in the prompt.
+func sanitizeQueryForEmbedding(query string) string {
+	q := reBotMention.ReplaceAllString(query, " ")
+	q = reBotKeyword.ReplaceAllString(q, " ")
+	q = reLeadingPunct.ReplaceAllString(q, "")
+	q = reTrailingPunct.ReplaceAllString(q, "")
+	q = reCollapseWS.ReplaceAllString(q, " ")
+	return strings.TrimSpace(q)
+}
+
 func (a *WikiLoreContextAdapter) LoreContext(ctx context.Context, query string) ([]orchestrator.LoreSnippet, []orchestrator.LoreCitation, error) {
 	if a.Composer == nil {
 		return nil, nil, nil
 	}
-	promptCtx, _, err := a.Composer.Compose(ctx, query)
+	cleaned := sanitizeQueryForEmbedding(query)
+	if cleaned == "" {
+		return nil, nil, nil
+	}
+	promptCtx, _, err := a.Composer.Compose(ctx, cleaned)
 	if err != nil {
 		return nil, nil, err
 	}
