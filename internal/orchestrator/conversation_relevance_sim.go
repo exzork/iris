@@ -28,6 +28,12 @@ func NewSimilarityInWindowRelevance(cfg SimilarityInWindowConfig) InWindowReleva
 	return &similarityInWindowRelevance{cfg: cfg}
 }
 
+// IsRelevant decides whether the current message continues the in-window
+// conversation by comparing its embedding against each context-message
+// embedding individually and taking the best (max) cosine similarity. This
+// matches the wiki_chunks retrieval path (pgvector `<=>` cosine distance,
+// score = 1 - distance, top hit wins) so on-topic detection survives mixed
+// context windows that would dilute a centroid-averaged comparison.
 func (r *similarityInWindowRelevance) IsRelevant(ctx context.Context, event *domain.DiscordEvent, contextMessages []*domain.ChannelMessage) (bool, float64, float64, error) {
 	if r.cfg.Embedder == nil {
 		return false, 0, 0, errors.New("embedder unavailable")
@@ -42,12 +48,12 @@ func (r *similarityInWindowRelevance) IsRelevant(ctx context.Context, event *dom
 		return false, 0, 0, err
 	}
 
-	contextEmbeddings := make([][]float32, 0, len(contextMessages))
+	bestSim := float64(-1)
+	considered := 0
 	for _, msg := range contextMessages {
 		if msg == nil {
 			continue
 		}
-
 		var msgEmbedding []float32
 		if len(msg.ContentEmbedding) > 0 {
 			msgEmbedding = msg.ContentEmbedding
@@ -58,39 +64,17 @@ func (r *similarityInWindowRelevance) IsRelevant(ctx context.Context, event *dom
 			}
 			msgEmbedding = embedded
 		}
-
-		contextEmbeddings = append(contextEmbeddings, msgEmbedding)
-	}
-
-	if len(contextEmbeddings) == 0 {
-		return false, 0, 0, nil
-	}
-
-	centroid := r.computeCentroid(contextEmbeddings)
-	similarity := float64(embedder.Cosine(centroid, currentEmbedding))
-
-	decision := similarity >= r.cfg.Threshold
-
-	return decision, similarity, r.cfg.Threshold, nil
-}
-
-func (r *similarityInWindowRelevance) computeCentroid(embeddings [][]float32) []float32 {
-	if len(embeddings) == 0 {
-		return []float32{}
-	}
-
-	dim := len(embeddings[0])
-	centroid := make([]float32, dim)
-
-	for _, emb := range embeddings {
-		for i := range centroid {
-			centroid[i] += emb[i]
+		sim := float64(embedder.Cosine(msgEmbedding, currentEmbedding))
+		considered++
+		if sim > bestSim {
+			bestSim = sim
 		}
 	}
 
-	for i := range centroid {
-		centroid[i] /= float32(len(embeddings))
+	if considered == 0 {
+		return false, 0, 0, nil
 	}
 
-	return embedder.L2Normalize(centroid)
+	decision := bestSim >= r.cfg.Threshold
+	return decision, bestSim, r.cfg.Threshold, nil
 }
