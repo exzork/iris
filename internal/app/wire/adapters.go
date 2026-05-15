@@ -329,10 +329,16 @@ type MemoryWriterAdapter struct {
 
 func (a *MemoryWriterAdapter) Save(ctx context.Context, guildID int64, userID int64, content string) error {
 	if a.Service == nil {
+		slog.Default().Warn("memory_writer_no_service")
 		return nil
 	}
-	_, err := a.Service.Store(ctx, guildID, userID, content)
-	return err
+	stored, err := a.Service.Store(ctx, guildID, userID, content)
+	if err != nil {
+		slog.Default().Warn("memory_writer_store_error", "guild", guildID, "user", userID, "err", err.Error())
+		return err
+	}
+	slog.Default().Info("memory_writer_store_returned", "guild", guildID, "user", userID, "stored", stored, "chars", len(content))
+	return nil
 }
 
 // SafetyCheckerAdapter wraps safety helpers for memory-summary admission checks.

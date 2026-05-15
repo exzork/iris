@@ -190,9 +190,17 @@ func main() {
 		}
 	}
 
-	// Memory service
+	// Memory service. ONNX-backed because memory_records.embedding is
+	// vector(384) and the local LLM proxy does not serve OpenAI embeddings.
+	var memoryEmbedder memory.EmbeddingProvider
+	if emb != nil {
+		memoryEmbedder = emb
+	} else {
+		memoryEmbedder = embedClient
+		log.Warn("memory using remote embedder; vector dim mismatch likely")
+	}
 	memSvc := memory.NewMemoryService(memory.Config{
-		Embed: embedClient,
+		Embed: memoryEmbedder,
 		Store: &wireadapters.MemoryStoreAdapter{Repo: memoryRepo},
 		TopK:  5,
 	})

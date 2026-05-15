@@ -844,7 +844,10 @@ func (o *Orchestrator) handle(j job) {
 	}
 
 	if o.cfg.Promoter != nil {
+		slog.InfoContext(ctx, "memory_promoter_invoked", "guild", event.GuildID, "user", event.UserID, "context_messages", len(contextMessages), "response_len", len(resp))
 		o.cfg.Promoter.Consider(context.Background(), event, contextMessages, resp)
+	} else {
+		slog.DebugContext(ctx, "memory_promoter_disabled")
 	}
 
 	slog.InfoContext(ctx, "typing_stopped", "guild", event.GuildID, "channel", event.ChannelID)

@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"unicode/utf8"
 
@@ -76,6 +77,7 @@ func (s *MemoryService) Store(ctx context.Context, guildID, userID int64, text s
 
 func (s *MemoryService) store_(ctx context.Context, guildID, userID int64, text string) (bool, error) {
 	if s.redactor.IsFullyRedacted(text) {
+		slog.Default().Warn("memory_service_redacted", "guild", guildID, "user", userID, "chars", len(text))
 		return false, nil
 	}
 
@@ -86,12 +88,15 @@ func (s *MemoryService) store_(ctx context.Context, guildID, userID int64, text 
 
 	vec, err := s.embed.Embed(ctx, cleaned)
 	if err != nil {
+		slog.Default().Warn("memory_service_embed_failed", "guild", guildID, "user", userID, "err", err.Error())
 		return false, err
 	}
 
 	if err := s.store.Save(ctx, guildID, userID, cleaned, vec); err != nil {
+		slog.Default().Warn("memory_service_save_failed", "guild", guildID, "user", userID, "err", err.Error())
 		return false, err
 	}
+	slog.Default().Info("memory_service_saved", "guild", guildID, "user", userID, "chars", len(cleaned), "vec_dim", len(vec))
 	return true, nil
 }
 
