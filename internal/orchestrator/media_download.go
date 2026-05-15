@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	mediaCacheDir       = "/tmp/iris-media"
-	mediaDownloadMax    = 12 * 1024 * 1024
-	mediaDownloadTimeout = 8 * time.Second
+	mediaCacheDir        = "/tmp/iris-media"
+	mediaDownloadMax     = 12 * 1024 * 1024
+	mediaDownloadTimeout = 20 * time.Second
+	mediaDownloadRetries = 1
 )
 
 // MediaFile is a downloaded media payload ready for Discord file attachment.
@@ -79,6 +80,26 @@ func downloadMediaFile(ctx context.Context, client *http.Client, raw string) (Me
 		}, nil
 	}
 
+	var lastErr error
+	attempts := mediaDownloadRetries + 1
+	for attempt := 0; attempt < attempts; attempt++ {
+		f, err := fetchMediaOnce(ctx, client, raw, parsed, cacheKey, ext, cachePath)
+		if err == nil {
+			return f, nil
+		}
+		lastErr = err
+		if errors.Is(err, context.Canceled) {
+			break
+		}
+		if attempt < attempts-1 {
+			slog.WarnContext(ctx, "media_download_retry", "url", raw, "attempt", attempt+1, "err", err.Error())
+		}
+	}
+	return MediaFile{}, lastErr
+}
+
+func fetchMediaOnce(ctx context.Context, client *http.Client, raw string, parsed *url.URL, cacheKey, ext, cachePath string) (MediaFile, error) {
+	start := time.Now()
 	reqCtx, cancel := context.WithTimeout(ctx, mediaDownloadTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, raw, nil)
@@ -90,17 +111,17 @@ func downloadMediaFile(ctx context.Context, client *http.Client, raw string) (Me
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return MediaFile{}, err
+		return MediaFile{}, fmt.Errorf("after %s: %w", time.Since(start), err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return MediaFile{}, fmt.Errorf("status %d", resp.StatusCode)
+		return MediaFile{}, fmt.Errorf("status %d after %s", resp.StatusCode, time.Since(start))
 	}
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, mediaDownloadMax+1))
 	if err != nil {
-		return MediaFile{}, err
+		return MediaFile{}, fmt.Errorf("read after %s: %w", time.Since(start), err)
 	}
 	if len(body) > mediaDownloadMax {
 		return MediaFile{}, errors.New("media too large")
@@ -121,6 +142,7 @@ func downloadMediaFile(ctx context.Context, client *http.Client, raw string) (Me
 	if err := os.WriteFile(cachePath, body, 0o644); err != nil {
 		return MediaFile{}, err
 	}
+	slog.DebugContext(ctx, "media_download_complete", "url", raw, "bytes", len(body), "elapsed", time.Since(start).String())
 	return MediaFile{
 		Name:        deriveFilename(parsed, cacheKey, ext),
 		ContentType: contentType,
