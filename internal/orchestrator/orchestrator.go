@@ -517,6 +517,7 @@ func (o *Orchestrator) handle(j job) {
 	var resp string
 	var llmErr error
 	streamingUsed := false
+	var streamMediaURLs []string
 	
 	if o.cfg.Streaming && o.cfg.StreamLLM != nil && len(o.cfg.Tools) == 0 {
 		streamingUsed = true
@@ -558,8 +559,33 @@ func (o *Orchestrator) handle(j job) {
 			triggerName = *event.AuthorName
 		}
 		knownIDs, usernameToID := collectKnownUserMap(event.UserID, triggerName, messages)
+		var collectedURLs []string
+		var collectedURLsMu sync.Mutex
+		mediaCollect := func(urls []string) {
+			if len(urls) == 0 {
+				return
+			}
+			collectedURLsMu.Lock()
+			defer collectedURLsMu.Unlock()
+			seen := make(map[string]struct{}, len(collectedURLs)+len(urls))
+			for _, u := range collectedURLs {
+				seen[u] = struct{}{}
+			}
+			for _, u := range urls {
+				if _, ok := seen[u]; ok {
+					continue
+				}
+				seen[u] = struct{}{}
+				collectedURLs = append(collectedURLs, u)
+			}
+		}
 		sender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID).
-			WithOutboundTransform(func(s string) string { return scrubOutbound(s, knownIDs, usernameToID) })
+			WithOutboundTransform(func(s string) string {
+				scrubbed := scrubOutbound(s, knownIDs, usernameToID)
+				cleaned, urls := extractMediaURLs(scrubbed)
+				mediaCollect(urls)
+				return cleaned
+			})
 		if event.Message != nil && event.Message.ID != 0 {
 			sender.WithReply(event.Message.ID, true)
 		}
@@ -636,6 +662,9 @@ func (o *Orchestrator) handle(j job) {
 		if !alreadyEscalated {
 			_ = sender.Flush(ctx)
 		}
+		collectedURLsMu.Lock()
+		streamMediaURLs = append(streamMediaURLs, collectedURLs...)
+		collectedURLsMu.Unlock()
 	} else if o.cfg.ToolsLLM != nil && len(o.cfg.Tools) > 0 {
 		resp, llmErr = o.cfg.ToolsLLM.ChatWithTools(ctx, messages, llm.ChatWithToolsConfig{
 			Model:   modelToUse,
@@ -728,6 +757,34 @@ func (o *Orchestrator) handle(j job) {
 			} else {
 				slog.DebugContext(ctx, "media_sender_unavailable")
 			}
+		}
+	}
+
+	if streamingUsed && len(streamMediaURLs) > 0 {
+		slog.InfoContext(ctx, "stream_media_extract", "media_urls", streamMediaURLs)
+		if fs, ok := o.cfg.Discord.(FileSender); ok {
+			slog.InfoContext(ctx, "media_download_start", "urls", len(streamMediaURLs))
+			downloaded := downloadMediaFiles(ctx, nil, streamMediaURLs)
+			slog.InfoContext(ctx, "media_download_done", "urls", len(streamMediaURLs), "downloaded", len(downloaded))
+			if len(downloaded) > 0 {
+				files := make([]FileAttachment, 0, len(downloaded))
+				for _, f := range downloaded {
+					files = append(files, FileAttachment{
+						Name:        f.Name,
+						ContentType: f.ContentType,
+						Bytes:       f.Bytes,
+					})
+				}
+				if err := fs.SendFiles(ctx, event.GuildID, event.ChannelID, files); err != nil {
+					slog.WarnContext(ctx, "media_file_send_failed", "guild", event.GuildID, "channel", event.ChannelID, "err", err)
+				} else {
+					slog.InfoContext(ctx, "media_files_sent", "count", len(files))
+				}
+			} else {
+				slog.WarnContext(ctx, "media_download_empty", "urls", len(streamMediaURLs))
+			}
+		} else {
+			slog.DebugContext(ctx, "media_sender_unavailable_streaming")
 		}
 	}
 
