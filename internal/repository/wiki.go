@@ -155,10 +155,10 @@ func (r *WikiRepo) SearchSimilar(ctx context.Context, sourceID string, embedding
 		topK = 5
 	}
 	const sql = `
-		SELECT id, page_id, title, url, content, embedding <-> $2 AS distance
+		SELECT id, page_id, title, url, content, embedding <=> $2 AS distance
 		FROM wiki_chunks
 		WHERE source_id = $1
-		ORDER BY embedding <-> $2
+		ORDER BY embedding <=> $2
 		LIMIT $3
 	`
 	vec := pgvector.NewVector(embedding)
