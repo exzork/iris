@@ -29,6 +29,7 @@ type PageSummary struct {
 
 type MediaWikiClient interface {
 	ListPages(ctx context.Context, fromTitle string, limit int) ([]PageSummary, error)
+	ListPagesAt(ctx context.Context, fromTitle string, apContinue string, limit int) (pages []PageSummary, nextContinue string, err error)
 	GetPage(ctx context.Context, id int64) (*Page, error)
 }
 
@@ -61,11 +62,25 @@ func NewHTTPMediaWikiClient(apiBaseURL, pageBaseURL, userAgent string) *HTTPMedi
 }
 
 func (c *HTTPMediaWikiClient) ListPages(ctx context.Context, fromTitle string, limit int) ([]PageSummary, error) {
+	pages, _, err := c.ListPagesAt(ctx, fromTitle, "", limit)
+	return pages, err
+}
+
+// ListPagesAt is the cursor-aware list operation. apContinue is the opaque
+// token returned by a prior call; when set, fromTitle is ignored. The
+// returned nextContinue should be persisted as the cursor for the next
+// invocation. An empty nextContinue means the source is exhausted.
+func (c *HTTPMediaWikiClient) ListPagesAt(ctx context.Context, fromTitle string, apContinue string, limit int) ([]PageSummary, string, error) {
 	if strings.TrimSpace(c.APIBaseURL) == "" {
-		return nil, errors.New("mediawiki client: APIBaseURL is required")
+		return nil, "", errors.New("mediawiki client: APIBaseURL is required")
 	}
 	if limit <= 0 {
 		limit = 1
+	}
+
+	requestLimit := limit
+	if apContinue == "" && strings.TrimSpace(fromTitle) != "" {
+		requestLimit = limit + 1
 	}
 
 	q := url.Values{}
@@ -74,17 +89,22 @@ func (c *HTTPMediaWikiClient) ListPages(ctx context.Context, fromTitle string, l
 	q.Set("apnamespace", "0")
 	q.Set("apfilterredir", "nonredirects")
 	q.Set("format", "json")
-	q.Set("aplimit", strconv.Itoa(limit))
-	if strings.TrimSpace(fromTitle) != "" {
+	q.Set("aplimit", strconv.Itoa(requestLimit))
+	if apContinue != "" {
+		q.Set("apcontinue", apContinue)
+	} else if strings.TrimSpace(fromTitle) != "" {
 		q.Set("apfrom", fromTitle)
 	}
 
 	body, err := c.doGet(ctx, q)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var payload struct {
+		Continue struct {
+			APContinue string `json:"apcontinue"`
+		} `json:"continue"`
 		Query struct {
 			AllPages []struct {
 				PageID int64  `json:"pageid"`
@@ -93,14 +113,17 @@ func (c *HTTPMediaWikiClient) ListPages(ctx context.Context, fromTitle string, l
 		} `json:"query"`
 	}
 	if err := json.Unmarshal(body, &payload); err != nil {
-		return nil, fmt.Errorf("mediawiki client: decode list pages response: %w", err)
+		return nil, "", fmt.Errorf("mediawiki client: decode list pages response: %w", err)
 	}
 
 	pages := make([]PageSummary, 0, len(payload.Query.AllPages))
 	for _, p := range payload.Query.AllPages {
+		if apContinue == "" && fromTitle != "" && p.Title == fromTitle {
+			continue
+		}
 		pages = append(pages, PageSummary{ID: p.PageID, Title: p.Title})
 	}
-	return pages, nil
+	return pages, payload.Continue.APContinue, nil
 }
 
 func (c *HTTPMediaWikiClient) GetPage(ctx context.Context, id int64) (*Page, error) {

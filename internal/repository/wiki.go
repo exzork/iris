@@ -21,20 +21,21 @@ func NewWikiRepo(db *DB) *WikiRepo {
 }
 
 type WikiCursor struct {
-	SourceID   string
-	LastTitle  string
-	LastPageID int64
-	UpdatedAt  time.Time
+	SourceID          string
+	LastTitle         string
+	LastPageID        int64
+	ContinuationToken string
+	UpdatedAt         time.Time
 }
 
 func (r *WikiRepo) GetCursor(ctx context.Context, sourceID string) (*WikiCursor, error) {
 	const sql = `
-		SELECT source_id, last_title, last_page_id, updated_at
+		SELECT source_id, last_title, last_page_id, continuation_token, updated_at
 		FROM wiki_ingest_cursors
 		WHERE source_id = $1
 	`
 	var cur WikiCursor
-	err := r.db.QueryRow(ctx, sql, sourceID).Scan(&cur.SourceID, &cur.LastTitle, &cur.LastPageID, &cur.UpdatedAt)
+	err := r.db.QueryRow(ctx, sql, sourceID).Scan(&cur.SourceID, &cur.LastTitle, &cur.LastPageID, &cur.ContinuationToken, &cur.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -49,18 +50,19 @@ func (r *WikiRepo) SaveCursor(ctx context.Context, cur *WikiCursor) error {
 		return errors.New("wiki cursor: nil")
 	}
 	const sql = `
-		INSERT INTO wiki_ingest_cursors (source_id, last_title, last_page_id, updated_at)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO wiki_ingest_cursors (source_id, last_title, last_page_id, continuation_token, updated_at)
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (source_id) DO UPDATE
 		SET last_title = EXCLUDED.last_title,
 			last_page_id = EXCLUDED.last_page_id,
+			continuation_token = EXCLUDED.continuation_token,
 			updated_at = EXCLUDED.updated_at
 	`
 	updated := cur.UpdatedAt
 	if updated.IsZero() {
 		updated = time.Now().UTC()
 	}
-	if _, err := r.db.Exec(ctx, sql, cur.SourceID, cur.LastTitle, cur.LastPageID, updated); err != nil {
+	if _, err := r.db.Exec(ctx, sql, cur.SourceID, cur.LastTitle, cur.LastPageID, cur.ContinuationToken, updated); err != nil {
 		return fmt.Errorf("wiki cursor save: %w", err)
 	}
 	return nil

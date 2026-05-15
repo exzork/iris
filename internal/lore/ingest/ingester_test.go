@@ -237,6 +237,17 @@ func (f *fakeClient) ListPages(_ context.Context, fromTitle string, limit int) (
 	return out, nil
 }
 
+func (f *fakeClient) ListPagesAt(ctx context.Context, fromTitle string, _ string, limit int) ([]PageSummary, string, error) {
+	pages, err := f.ListPages(ctx, fromTitle, limit)
+	if err != nil {
+		return nil, "", err
+	}
+	if len(pages) == 0 {
+		return nil, "", nil
+	}
+	return pages, pages[len(pages)-1].Title, nil
+}
+
 func (f *fakeClient) GetPage(_ context.Context, id int64) (*Page, error) {
 	if n := f.failGetPageCount[id]; n > 0 {
 		f.failGetPageCount[id] = n - 1

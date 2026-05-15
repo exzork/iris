@@ -28,6 +28,7 @@ func (a *WikiCursorAdapter) Get(ctx context.Context, sourceID string) (*ingest.C
 		SourceID:  rec.SourceID,
 		LastID:    rec.LastPageID,
 		LastTitle: rec.LastTitle,
+		Continue:  rec.ContinuationToken,
 		UpdatedAt: rec.UpdatedAt,
 	}, nil
 }
@@ -37,10 +38,11 @@ func (a *WikiCursorAdapter) Save(ctx context.Context, cur *ingest.Cursor) error 
 		return nil
 	}
 	return a.Repo.SaveCursor(ctx, &repository.WikiCursor{
-		SourceID:   cur.SourceID,
-		LastTitle:  cur.LastTitle,
-		LastPageID: cur.LastID,
-		UpdatedAt:  cur.UpdatedAt,
+		SourceID:          cur.SourceID,
+		LastTitle:         cur.LastTitle,
+		LastPageID:        cur.LastID,
+		ContinuationToken: cur.Continue,
+		UpdatedAt:         cur.UpdatedAt,
 	})
 }
 

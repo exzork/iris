@@ -10,6 +10,7 @@ type Cursor struct {
 	SourceID  string
 	LastID    int64
 	LastTitle string
+	Continue  string
 	UpdatedAt time.Time
 }
 

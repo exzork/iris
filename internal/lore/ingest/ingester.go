@@ -48,6 +48,7 @@ type RunStats struct {
 	Skipped        int
 	Errors         int
 	LastID         int64
+	Exhausted      bool
 }
 
 func New(cfg Config) *Ingester {
@@ -72,18 +73,21 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 	}
 
 	fromTitle := ""
+	apContinue := ""
 	lastSaved := &Cursor{SourceID: i.cfg.SourceID}
 	if cur != nil {
 		fromTitle = cur.LastTitle
+		apContinue = cur.Continue
 		lastSaved = &Cursor{
 			SourceID:  cur.SourceID,
 			LastID:    cur.LastID,
 			LastTitle: cur.LastTitle,
+			Continue:  cur.Continue,
 			UpdatedAt: cur.UpdatedAt,
 		}
 	}
 
-	summaries, err := i.cfg.Client.ListPages(ctx, fromTitle, i.cfg.BatchSize)
+	summaries, nextContinue, err := i.cfg.Client.ListPagesAt(ctx, fromTitle, apContinue, i.cfg.BatchSize)
 	if err != nil {
 		return stats, fmt.Errorf("ingester: list pages: %w", err)
 	}
@@ -174,6 +178,9 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 	if stats.LastID == 0 {
 		stats.LastID = lastSaved.LastID
 	}
+	lastSaved.Continue = nextContinue
+	lastSaved.UpdatedAt = time.Now().UTC()
+	stats.Exhausted = nextContinue == ""
 
 	if err := i.cfg.Cursor.Save(ctx, lastSaved); err != nil {
 		return stats, fmt.Errorf("ingester: save cursor: %w", err)

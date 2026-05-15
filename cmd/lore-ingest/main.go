@@ -164,7 +164,7 @@ func main() {
 			"last_id", stats.LastID,
 		)
 
-		if stats.PagesFetched == 0 {
+		if stats.Exhausted {
 			log.Info("no more pages; source exhausted")
 			break
 		}
