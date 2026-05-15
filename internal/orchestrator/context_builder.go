@@ -407,7 +407,10 @@ func (cb *ContextBuilder) buildWikiLoreBlock(ctx context.Context, event *domain.
 
 	var sb strings.Builder
 	sb.WriteString("[WIKI GROUNDING - WUTHERING WAVES FANDOM]\n")
-	sb.WriteString("Use these snippets as the authoritative source when answering lore questions. If you cite facts from them, include at least one citation in the format `Title, url` from the citations list.\n")
+	sb.WriteString("These snippets are the ONLY canonical source you may rely on for this answer. Rules:\n")
+	sb.WriteString("- If a snippet directly addresses the entity, item, quest, or concept the user asked about, you MAY use it as canonical fact and cite it as `Title, url`.\n")
+	sb.WriteString("- If NONE of the snippets actually mention or discuss what the user asked about, you MUST say you do not have canonical data on it. Do NOT invent backstory, role, faction, region, or any factual claim from prior knowledge.\n")
+	sb.WriteString("- Snippets are ranked by similarity, not relevance. A high rank does NOT mean the snippet is on-topic; verify the topic match yourself before quoting.\n")
 	for i, sn := range snippets {
 		text := sn.Text
 		if cap := cb.cfg.PerMessageCharCap; cap > 0 && utf8.RuneCountInString(text) > cap {
@@ -415,7 +418,7 @@ func (cb *ContextBuilder) buildWikiLoreBlock(ctx context.Context, event *domain.
 		}
 		fmt.Fprintf(&sb, "[%d] %s (score=%.2f)\n%s\n", i+1, sn.Title, sn.Score, text)
 	}
-	sb.WriteString("Citations:\n")
+	sb.WriteString("Citations available (only cite ones that actually back your claim):\n")
 	for _, c := range citations {
 		fmt.Fprintf(&sb, "- %s, %s\n", c.Title, c.URL)
 	}

@@ -110,7 +110,14 @@ func (a *WikiRetrievalAdapter) SearchSimilar(ctx context.Context, embedding []fl
 }
 
 type WikiLoreContextAdapter struct {
-	Composer *rag.Composer
+	Retriever *rag.Retriever
+	TopK      int
+
+	// MinTopScore drops the entire result set if the best snippet's score
+	// is below this threshold. Cosine similarity from the ONNX MiniLM
+	// embedder lands ~0.45-0.55 on direct topic matches and ~0.30-0.38 on
+	// noise. Default 0.40 if unset.
+	MinTopScore float64
 }
 
 var (
@@ -135,41 +142,52 @@ func sanitizeQueryForEmbedding(query string) string {
 }
 
 func (a *WikiLoreContextAdapter) LoreContext(ctx context.Context, query string) ([]orchestrator.LoreSnippet, []orchestrator.LoreCitation, error) {
-	if a.Composer == nil {
+	if a.Retriever == nil {
 		return nil, nil, nil
 	}
 	cleaned := sanitizeQueryForEmbedding(query)
 	if cleaned == "" {
 		return nil, nil, nil
 	}
-	promptCtx, _, err := a.Composer.Compose(ctx, cleaned)
+
+	topK := a.TopK
+	if topK <= 0 {
+		topK = 5
+	}
+	threshold := a.MinTopScore
+	if threshold <= 0 {
+		threshold = 0.40
+	}
+
+	chunks, err := a.Retriever.Retrieve(ctx, cleaned, topK)
 	if err != nil {
 		return nil, nil, err
 	}
-	if promptCtx == nil || !promptCtx.HasSupport {
+	if len(chunks) == 0 {
+		return nil, nil, nil
+	}
+	if chunks[0].Score < threshold {
 		return nil, nil, nil
 	}
 
-	snippets := make([]orchestrator.LoreSnippet, 0, len(promptCtx.Snippets))
-	for i, text := range promptCtx.Snippets {
-		var title, url string
-		if i < len(promptCtx.Citations) {
-			title = promptCtx.Citations[i].Title
-			url = promptCtx.Citations[i].URL
-		}
+	snippets := make([]orchestrator.LoreSnippet, 0, len(chunks))
+	citationMap := make(map[string]orchestrator.LoreCitation)
+	citationOrder := make([]string, 0, len(chunks))
+	for _, c := range chunks {
 		snippets = append(snippets, orchestrator.LoreSnippet{
-			Title: title,
-			URL:   url,
-			Text:  text,
-		})
-	}
-
-	citations := make([]orchestrator.LoreCitation, 0, len(promptCtx.Citations))
-	for _, c := range promptCtx.Citations {
-		citations = append(citations, orchestrator.LoreCitation{
 			Title: c.Title,
 			URL:   c.URL,
+			Score: c.Score,
+			Text:  c.Content,
 		})
+		if _, exists := citationMap[c.URL]; !exists {
+			citationMap[c.URL] = orchestrator.LoreCitation{Title: c.Title, URL: c.URL}
+			citationOrder = append(citationOrder, c.URL)
+		}
+	}
+	citations := make([]orchestrator.LoreCitation, 0, len(citationOrder))
+	for _, url := range citationOrder {
+		citations = append(citations, citationMap[url])
 	}
 	return snippets, citations, nil
 }
