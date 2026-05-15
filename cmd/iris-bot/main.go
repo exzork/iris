@@ -195,9 +195,10 @@ func main() {
 	var memoryEmbedder memory.EmbeddingProvider
 	if emb != nil {
 		memoryEmbedder = emb
+		log.Info("memory_embedder_wired", "kind", "onnx", "dim", emb.Dim())
 	} else {
 		memoryEmbedder = embedClient
-		log.Warn("memory using remote embedder; vector dim mismatch likely")
+		log.Warn("memory using remote embedder; vector dim mismatch likely", "kind", "remote")
 	}
 	memSvc := memory.NewMemoryService(memory.Config{
 		Embed: memoryEmbedder,
@@ -583,7 +584,7 @@ func main() {
 		ConversationRefresher: convRepo,
 		Capture:               capturePort,
 		GuildMemory:           guildRecallSvc,
-		CuratedMemory:         &wireadapters.CuratedMemoryAdapter{Repo: memoryRepo, Embedder: emb, MinScore: 0.40},
+		CuratedMemory:         &wireadapters.CuratedMemoryAdapter{Repo: memoryRepo, Embedder: emb, MinScore: 0.25},
 		UserBehavior:          behaviorProfileSvc,
 		BehaviorUpdater:       behaviorUpdateAdapter,
 		LoreCapturer:          loreCapturer,

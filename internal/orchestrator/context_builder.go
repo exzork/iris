@@ -339,18 +339,21 @@ func (cb *ContextBuilder) buildUntrustedMemoryBlock(ctx context.Context, event *
 	var chatHits []*repository.RecallResult
 	if cb.recall != nil {
 		results, err := cb.recall.Recall(ctx, event.GuildID, event.Message.Content)
-		if err == nil {
-			chatHits = results
+		if err != nil {
+			slog.WarnContext(ctx, "guild_memory_recall_failed", "err", err.Error())
 		}
+		chatHits = results
 	}
 
 	var curatedHits []domain.MemoryRecord
 	if cb.curated != nil {
 		results, err := cb.curated.Recall(ctx, event.GuildID, event.Message.Content, 5)
-		if err == nil {
-			curatedHits = results
+		if err != nil {
+			slog.WarnContext(ctx, "curated_memory_recall_failed", "err", err.Error())
 		}
+		curatedHits = results
 	}
+	slog.InfoContext(ctx, "memory_recall_summary", "chat_hits", len(chatHits), "curated_hits", len(curatedHits), "query", event.Message.Content)
 
 	if len(chatHits) == 0 && len(curatedHits) == 0 {
 		return ""
