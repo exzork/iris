@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	ErrBotMessage = errors.New("message from bot, ignoring")
-	ErrNilMessage = errors.New("message is nil")
+	ErrBotMessage    = errors.New("message from bot, ignoring")
+	ErrNilMessage    = errors.New("message is nil")
+	ErrSystemMessage = errors.New("non-default discord message type, ignoring")
 )
 
 type EventNormalizer struct {
@@ -39,6 +40,10 @@ func (en *EventNormalizer) SetReferencedMessage(msgID string, msg *discordgo.Mes
 func (en *EventNormalizer) NormalizeMessageCreate(msg *discordgo.Message) (*domain.DiscordEvent, error) {
 	if msg == nil {
 		return nil, ErrNilMessage
+	}
+
+	if msg.Type != discordgo.MessageTypeDefault && msg.Type != discordgo.MessageTypeReply {
+		return nil, ErrSystemMessage
 	}
 
 	authorID, err := strconv.ParseInt(msg.Author.ID, 10, 64)

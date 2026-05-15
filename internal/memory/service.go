@@ -20,7 +20,7 @@ type EmbeddingProvider interface {
 
 // MemoryStore persists and retrieves guild-scoped memory rows.
 type MemoryStore interface {
-	Save(ctx context.Context, guildID int64, content string, embedding []float32) error
+	Save(ctx context.Context, guildID int64, userID int64, content string, embedding []float32) error
 	SearchSimilar(ctx context.Context, guildID int64, embedding []float32, limit int) ([]domain.MemoryRecord, error)
 }
 
@@ -78,7 +78,7 @@ func (s *MemoryService) Consider(ctx context.Context, guildID, userID int64, tex
 		return false, err
 	}
 
-	if err := s.store.Save(ctx, guildID, cleaned, vec); err != nil {
+	if err := s.store.Save(ctx, guildID, userID, cleaned, vec); err != nil {
 		return false, err
 	}
 	return true, nil

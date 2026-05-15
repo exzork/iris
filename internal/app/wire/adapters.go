@@ -28,8 +28,8 @@ type MemoryStoreAdapter struct {
 	Repo *repository.MemoryRepo
 }
 
-func (a *MemoryStoreAdapter) Save(ctx context.Context, guildID int64, content string, embedding []float32) error {
-	return a.Repo.Save(ctx, guildID, content, embedding)
+func (a *MemoryStoreAdapter) Save(ctx context.Context, guildID int64, userID int64, content string, embedding []float32) error {
+	return a.Repo.Save(ctx, guildID, userID, content, embedding)
 }
 
 func (a *MemoryStoreAdapter) SearchSimilar(ctx context.Context, guildID int64, embedding []float32, limit int) ([]domain.MemoryRecord, error) {

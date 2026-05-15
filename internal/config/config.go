@@ -318,7 +318,7 @@ func Load() (*Config, error) {
 func loadMemoryServerConfig() MemoryServerConfig {
 	cfg := MemoryServerConfig{
 		Enabled:            true,
-		RecallThreshold:    0.72,
+		RecallThreshold:    0.55,
 		RecallTopK:         5,
 		EmbedBatchSize:     32,
 		EmbedWorkers:       1,

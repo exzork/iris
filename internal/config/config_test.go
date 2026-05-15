@@ -42,8 +42,8 @@ func TestLoadConfig_MemoryServerDefaults(t *testing.T) {
 	if !ms.Enabled {
 		t.Errorf("MemoryServer.Enabled default = false, want true")
 	}
-	if ms.RecallThreshold != 0.72 {
-		t.Errorf("RecallThreshold default = %v, want 0.72", ms.RecallThreshold)
+	if ms.RecallThreshold != 0.55 {
+		t.Errorf("RecallThreshold default = %v, want 0.55", ms.RecallThreshold)
 	}
 	if ms.RecallTopK != 5 {
 		t.Errorf("RecallTopK default = %d, want 5", ms.RecallTopK)
@@ -107,8 +107,8 @@ func TestLoadConfig_MemoryServerInvalidValuesFallBack(t *testing.T) {
 	}
 
 	ms := cfg.MemoryServer
-	if ms.RecallThreshold != 0.72 {
-		t.Errorf("invalid threshold should fall back to 0.72, got %v", ms.RecallThreshold)
+	if ms.RecallThreshold != 0.55 {
+		t.Errorf("invalid threshold should fall back to 0.55, got %v", ms.RecallThreshold)
 	}
 	if ms.RecallTopK != 5 {
 		t.Errorf("invalid top_k should fall back to 5, got %d", ms.RecallTopK)
@@ -633,8 +633,8 @@ func TestMemoryServerConfig_DefaultsWhenUnset(t *testing.T) {
 	if !cfg.MemoryServer.Enabled {
 		t.Errorf("expected MemoryServer.Enabled=true, got %v", cfg.MemoryServer.Enabled)
 	}
-	if cfg.MemoryServer.RecallThreshold != 0.72 {
-		t.Errorf("expected MemoryServer.RecallThreshold=0.72, got %f", cfg.MemoryServer.RecallThreshold)
+	if cfg.MemoryServer.RecallThreshold != 0.55 {
+		t.Errorf("expected MemoryServer.RecallThreshold=0.55, got %f", cfg.MemoryServer.RecallThreshold)
 	}
 	if cfg.MemoryServer.RecallTopK != 5 {
 		t.Errorf("expected MemoryServer.RecallTopK=5, got %d", cfg.MemoryServer.RecallTopK)
@@ -704,8 +704,8 @@ func TestMemoryServerConfig_ThresholdOutOfRangeFallsBack(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if cfg.MemoryServer.RecallThreshold != 0.72 {
-		t.Errorf("expected MemoryServer.RecallThreshold=0.72 (fallback), got %f", cfg.MemoryServer.RecallThreshold)
+	if cfg.MemoryServer.RecallThreshold != 0.55 {
+		t.Errorf("expected MemoryServer.RecallThreshold=0.55 (fallback), got %f", cfg.MemoryServer.RecallThreshold)
 	}
 }
 

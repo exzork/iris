@@ -174,7 +174,7 @@ func TestMemoryRepo(t *testing.T) {
 			embedding[i] = float32(i) / 1536.0
 		}
 
-		err := memoryRepo.Save(ctx, guild.ID, "test memory", embedding)
+		err := memoryRepo.Save(ctx, guild.ID, 0, "test memory", embedding)
 		if err != nil {
 			t.Fatalf("failed to save memory: %v", err)
 		}
@@ -214,7 +214,7 @@ func TestMemoryRepo(t *testing.T) {
 		guildRepo.Create(ctx, guild2)
 
 		embedding := make([]float32, 1536)
-		memoryRepo.Save(ctx, guild2.ID, "guild2 memory", embedding)
+		memoryRepo.Save(ctx, guild2.ID, 0, "guild2 memory", embedding)
 
 		records, err := memoryRepo.GetByGuild(ctx, guild.ID, 100)
 		if err != nil {

@@ -17,17 +17,24 @@ func NewMemoryRepo(db *DB) *MemoryRepo {
 	return &MemoryRepo{db: db}
 }
 
-func (r *MemoryRepo) Save(ctx context.Context, guildID int64, content string, embedding []float32) error {
+func (r *MemoryRepo) Save(ctx context.Context, guildID int64, userID int64, content string, embedding []float32) error {
 	sql := `
-		INSERT INTO memory_records (guild_id, content, embedding, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO memory_records (guild_id, user_id, content, embedding, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	vec := pgvector.NewVector(embedding)
-	_, err := r.db.Exec(ctx, sql, guildID, content, vec, time.Now(), time.Now())
+	_, err := r.db.Exec(ctx, sql, guildID, nullableUserID(userID), content, vec, time.Now(), time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to save memory record: %w", err)
 	}
 	return nil
+}
+
+func nullableUserID(userID int64) interface{} {
+	if userID == 0 {
+		return nil
+	}
+	return userID
 }
 
 func (r *MemoryRepo) GetByGuild(ctx context.Context, guildID int64, limit int) ([]domain.MemoryRecord, error) {

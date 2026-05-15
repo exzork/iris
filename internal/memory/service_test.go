@@ -28,7 +28,7 @@ type fakeStore struct {
 	searchCalls int
 }
 
-func (f *fakeStore) Save(ctx context.Context, guildID int64, content string, embedding []float32) error {
+func (f *fakeStore) Save(ctx context.Context, guildID int64, userID int64, content string, embedding []float32) error {
 	f.saved = append(f.saved, savedRow{guildID, content, embedding})
 	return nil
 }
