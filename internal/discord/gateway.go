@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"strconv"
 	"sync"
@@ -233,6 +234,37 @@ func (ga *GatewayAdapter) SendTyping(ctx context.Context, guildID, channelID int
 		return err
 	}
 	return nil
+}
+
+type AttachmentFile struct {
+	Name        string
+	ContentType string
+	Reader      io.Reader
+}
+
+func (ga *GatewayAdapter) SendFiles(ctx context.Context, guildID, channelID int64, files []AttachmentFile) error {
+	if len(files) == 0 {
+		return nil
+	}
+	channelIDStr := fmt.Sprintf("%d", channelID)
+	dgFiles := make([]*discordgo.File, 0, len(files))
+	for _, f := range files {
+		if f.Reader == nil {
+			continue
+		}
+		dgFiles = append(dgFiles, &discordgo.File{
+			Name:        f.Name,
+			ContentType: f.ContentType,
+			Reader:      f.Reader,
+		})
+	}
+	if len(dgFiles) == 0 {
+		return nil
+	}
+	_, err := ga.session.ChannelMessageSendComplex(channelIDStr, &discordgo.MessageSend{
+		Files: dgFiles,
+	})
+	return err
 }
 
 func (ga *GatewayAdapter) SendImageEmbeds(ctx context.Context, guildID, channelID int64, urls []string) error {

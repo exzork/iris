@@ -1,6 +1,7 @@
 package wire
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"log/slog"
@@ -195,6 +196,18 @@ func (a *DiscordSenderAdapter) SendTyping(ctx context.Context, guildID, channelI
 
 func (a *DiscordSenderAdapter) SendImageEmbeds(ctx context.Context, guildID, channelID int64, urls []string) error {
 	return a.Gateway.SendImageEmbeds(ctx, guildID, channelID, urls)
+}
+
+func (a *DiscordSenderAdapter) SendFiles(ctx context.Context, guildID, channelID int64, files []orchestrator.FileAttachment) error {
+	out := make([]discord.AttachmentFile, 0, len(files))
+	for _, f := range files {
+		out = append(out, discord.AttachmentFile{
+			Name:        f.Name,
+			ContentType: f.ContentType,
+			Reader:      bytes.NewReader(f.Bytes),
+		})
+	}
+	return a.Gateway.SendFiles(ctx, guildID, channelID, out)
 }
 
 // GuildEnsurer interface for ensuring guild row exists before writes.

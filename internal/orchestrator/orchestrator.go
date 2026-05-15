@@ -40,6 +40,16 @@ type ImageEmbedSender interface {
 	SendImageEmbeds(ctx context.Context, guildID, channelID int64, urls []string) error
 }
 
+type FileAttachment struct {
+	Name        string
+	ContentType string
+	Bytes       []byte
+}
+
+type FileSender interface {
+	SendFiles(ctx context.Context, guildID, channelID int64, files []FileAttachment) error
+}
+
 type TypingSender interface {
 	SendTyping(ctx context.Context, guildID, channelID int64) error
 }
@@ -684,12 +694,29 @@ func (o *Orchestrator) handle(j job) {
 			_ = o.cfg.Discord.SendMessage(ctx, event.GuildID, event.ChannelID, chunk)
 		}
 		if len(mediaURLs) > 0 {
-			if embedSender, ok := o.cfg.Discord.(ImageEmbedSender); ok {
+			if fs, ok := o.cfg.Discord.(FileSender); ok {
+				downloaded := downloadMediaFiles(ctx, nil, mediaURLs)
+				if len(downloaded) > 0 {
+					files := make([]FileAttachment, 0, len(downloaded))
+					for _, f := range downloaded {
+						files = append(files, FileAttachment{
+							Name:        f.Name,
+							ContentType: f.ContentType,
+							Bytes:       f.Bytes,
+						})
+					}
+					if err := fs.SendFiles(ctx, event.GuildID, event.ChannelID, files); err != nil {
+						slog.WarnContext(ctx, "media_file_send_failed", "guild", event.GuildID, "channel", event.ChannelID, "err", err)
+					}
+				} else {
+					slog.WarnContext(ctx, "media_download_empty", "urls", len(mediaURLs))
+				}
+			} else if embedSender, ok := o.cfg.Discord.(ImageEmbedSender); ok {
 				if err := embedSender.SendImageEmbeds(ctx, event.GuildID, event.ChannelID, mediaURLs); err != nil {
 					slog.WarnContext(ctx, "embed_send_failed", "guild", event.GuildID, "channel", event.ChannelID, "err", err)
 				}
 			} else {
-				slog.DebugContext(ctx, "embed_sender_unavailable")
+				slog.DebugContext(ctx, "media_sender_unavailable")
 			}
 		}
 	}
