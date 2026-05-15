@@ -24,6 +24,7 @@ RUN go mod download
 # Copy source and build with CGO enabled
 COPY . .
 RUN CGO_ENABLED=1 GOOS=linux go build -trimpath -tags cgo -mod=mod -o /out/iris-bot ./cmd/iris-bot
+RUN CGO_ENABLED=1 GOOS=linux go build -trimpath -tags cgo -mod=mod -o /out/lore-ingest ./cmd/lore-ingest
 
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
@@ -49,6 +50,7 @@ COPY --from=build /usr/local/lib/libonnxruntime.so* /usr/local/lib/
 
 # Copy binary from build stage
 COPY --from=build /out/iris-bot /usr/local/bin/iris-bot
+COPY --from=build /out/lore-ingest /usr/local/bin/lore-ingest
 
 # Update library cache
 RUN ldconfig

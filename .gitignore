@@ -1,3 +1,6 @@
 .env
-iris-bot
-migrate
+/iris-bot
+/migrate
+/lore-ingest
+/bin/
+.sisyphus/logs/

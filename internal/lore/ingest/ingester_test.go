@@ -217,13 +217,16 @@ type fakeClient struct {
 	failGetPageCount map[int64]int
 }
 
-func (f *fakeClient) ListPages(_ context.Context, fromID int64, limit int) ([]PageSummary, error) {
+func (f *fakeClient) ListPages(_ context.Context, fromTitle string, limit int) ([]PageSummary, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
+	sorted := make([]*Page, len(f.pages))
+	copy(sorted, f.pages)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Title < sorted[j].Title })
 	out := make([]PageSummary, 0, limit)
-	for _, p := range f.pages {
-		if p.ID <= fromID {
+	for _, p := range sorted {
+		if fromTitle != "" && p.Title <= fromTitle {
 			continue
 		}
 		out = append(out, PageSummary{ID: p.ID, Title: p.Title})

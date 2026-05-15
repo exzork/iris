@@ -13,7 +13,6 @@ import (
 	"time"
 )
 
-// Page is a fully fetched MediaWiki page record.
 type Page struct {
 	ID        int64
 	Title     string
@@ -23,43 +22,47 @@ type Page struct {
 	UpdatedAt time.Time
 }
 
-// PageSummary is returned by ListPages for incremental discovery.
 type PageSummary struct {
 	ID    int64
 	Title string
 }
 
-// MediaWikiClient retrieves pages from the MediaWiki API.
 type MediaWikiClient interface {
-	// ListPages returns up to limit pages starting after fromID.
-	ListPages(ctx context.Context, fromID int64, limit int) ([]PageSummary, error)
-	// GetPage fetches full wikitext for a page by id.
+	ListPages(ctx context.Context, fromTitle string, limit int) ([]PageSummary, error)
 	GetPage(ctx context.Context, id int64) (*Page, error)
 }
 
-// HTTPMediaWikiClient is a MediaWiki API implementation over HTTP.
-// NOTE: ingestion intentionally uses API endpoints only (no HTML scraping).
+// HTTPMediaWikiClient hits the MediaWiki action API.
+// Fandom example: APIBaseURL="https://wutheringwaves.fandom.com/api.php",
+// PageBaseURL="https://wutheringwaves.fandom.com/wiki/".
+// HTML scraping is intentionally not used.
 type HTTPMediaWikiClient struct {
-	BaseURL    string
-	UserAgent  string
-	HTTP       *http.Client
-	MaxRetries int
-	RetryDelay time.Duration
+	APIBaseURL  string
+	PageBaseURL string
+	UserAgent   string
+	HTTP        *http.Client
+	MaxRetries  int
+	RetryDelay  time.Duration
+	MinInterval time.Duration
+
+	lastRequest time.Time
 }
 
-func NewHTTPMediaWikiClient(baseURL, userAgent string) *HTTPMediaWikiClient {
+func NewHTTPMediaWikiClient(apiBaseURL, pageBaseURL, userAgent string) *HTTPMediaWikiClient {
 	return &HTTPMediaWikiClient{
-		BaseURL:    strings.TrimSpace(baseURL),
-		UserAgent:  userAgent,
-		HTTP:       &http.Client{Timeout: 20 * time.Second},
-		MaxRetries: 2,
-		RetryDelay: 100 * time.Millisecond,
+		APIBaseURL:  strings.TrimSpace(apiBaseURL),
+		PageBaseURL: strings.TrimSpace(pageBaseURL),
+		UserAgent:   userAgent,
+		HTTP:        &http.Client{Timeout: 20 * time.Second},
+		MaxRetries:  2,
+		RetryDelay:  100 * time.Millisecond,
+		MinInterval: time.Second,
 	}
 }
 
-func (c *HTTPMediaWikiClient) ListPages(ctx context.Context, fromID int64, limit int) ([]PageSummary, error) {
-	if strings.TrimSpace(c.BaseURL) == "" {
-		return nil, errors.New("mediawiki client: BaseURL is required")
+func (c *HTTPMediaWikiClient) ListPages(ctx context.Context, fromTitle string, limit int) ([]PageSummary, error) {
+	if strings.TrimSpace(c.APIBaseURL) == "" {
+		return nil, errors.New("mediawiki client: APIBaseURL is required")
 	}
 	if limit <= 0 {
 		limit = 1
@@ -68,9 +71,13 @@ func (c *HTTPMediaWikiClient) ListPages(ctx context.Context, fromID int64, limit
 	q := url.Values{}
 	q.Set("action", "query")
 	q.Set("list", "allpages")
+	q.Set("apnamespace", "0")
+	q.Set("apfilterredir", "nonredirects")
 	q.Set("format", "json")
 	q.Set("aplimit", strconv.Itoa(limit))
-	q.Set("apfrom", strconv.FormatInt(fromID, 10))
+	if strings.TrimSpace(fromTitle) != "" {
+		q.Set("apfrom", fromTitle)
+	}
 
 	body, err := c.doGet(ctx, q)
 	if err != nil {
@@ -97,8 +104,8 @@ func (c *HTTPMediaWikiClient) ListPages(ctx context.Context, fromID int64, limit
 }
 
 func (c *HTTPMediaWikiClient) GetPage(ctx context.Context, id int64) (*Page, error) {
-	if strings.TrimSpace(c.BaseURL) == "" {
-		return nil, errors.New("mediawiki client: BaseURL is required")
+	if strings.TrimSpace(c.APIBaseURL) == "" {
+		return nil, errors.New("mediawiki client: APIBaseURL is required")
 	}
 	if id <= 0 {
 		return nil, fmt.Errorf("mediawiki client: invalid page id %d", id)
@@ -149,9 +156,9 @@ func (c *HTTPMediaWikiClient) doGet(ctx context.Context, query url.Values) ([]by
 		httpClient = &http.Client{Timeout: 20 * time.Second}
 	}
 
-	baseURL, err := url.Parse(c.BaseURL)
+	baseURL, err := url.Parse(c.APIBaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("mediawiki client: invalid BaseURL: %w", err)
+		return nil, fmt.Errorf("mediawiki client: invalid APIBaseURL: %w", err)
 	}
 	q := baseURL.Query()
 	for k, vals := range query {
@@ -160,6 +167,10 @@ func (c *HTTPMediaWikiClient) doGet(ctx context.Context, query url.Values) ([]by
 		}
 	}
 	baseURL.RawQuery = q.Encode()
+
+	if err := c.respectRateLimit(ctx); err != nil {
+		return nil, err
+	}
 
 	var lastErr error
 	attempts := c.MaxRetries + 1
@@ -197,7 +208,7 @@ func (c *HTTPMediaWikiClient) doGet(ctx context.Context, query url.Values) ([]by
 			return nil, fmt.Errorf("mediawiki client: close response body: %w", closeErr)
 		}
 
-		if resp.StatusCode >= http.StatusInternalServerError {
+		if resp.StatusCode >= http.StatusInternalServerError || resp.StatusCode == http.StatusTooManyRequests {
 			lastErr = fmt.Errorf("mediawiki client: server status %d", resp.StatusCode)
 			if attempt < attempts-1 {
 				if err := sleepWithContext(ctx, c.retryDelayFor(attempt)); err != nil {
@@ -220,6 +231,20 @@ func (c *HTTPMediaWikiClient) doGet(ctx context.Context, query url.Values) ([]by
 	return nil, errors.New("mediawiki client: request failed")
 }
 
+func (c *HTTPMediaWikiClient) respectRateLimit(ctx context.Context) error {
+	if c.MinInterval <= 0 {
+		return nil
+	}
+	wait := time.Until(c.lastRequest.Add(c.MinInterval))
+	if wait > 0 {
+		if err := sleepWithContext(ctx, wait); err != nil {
+			return err
+		}
+	}
+	c.lastRequest = time.Now()
+	return nil
+}
+
 func (c *HTTPMediaWikiClient) retryDelayFor(attempt int) time.Duration {
 	delay := c.RetryDelay
 	if delay <= 0 {
@@ -232,6 +257,9 @@ func (c *HTTPMediaWikiClient) retryDelayFor(attempt int) time.Duration {
 }
 
 func sleepWithContext(ctx context.Context, d time.Duration) error {
+	if d <= 0 {
+		return nil
+	}
 	t := time.NewTimer(d)
 	defer t.Stop()
 	select {
@@ -262,17 +290,16 @@ func extractWikitext(raw any) string {
 }
 
 func (c *HTTPMediaWikiClient) pageURL(title string) string {
-	if strings.TrimSpace(c.BaseURL) == "" {
+	base := strings.TrimSpace(c.PageBaseURL)
+	if base == "" {
 		return ""
 	}
-	u, err := url.Parse(c.BaseURL)
-	if err != nil {
-		return ""
+	if !strings.HasSuffix(base, "/") {
+		base += "/"
 	}
-	u.RawQuery = ""
 	titlePath := strings.ReplaceAll(strings.TrimSpace(title), " ", "_")
-	if titlePath != "" {
-		u.Path = strings.TrimRight(u.Path, "/") + "/wiki/" + url.PathEscape(titlePath)
+	if titlePath == "" {
+		return base
 	}
-	return u.String()
+	return base + url.PathEscape(titlePath)
 }

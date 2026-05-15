@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+func newTestClient(serverURL string, ua string) *HTTPMediaWikiClient {
+	c := NewHTTPMediaWikiClient(serverURL, "https://example.invalid/wiki/", ua)
+	c.MinInterval = 0
+	return c
+}
+
 func TestListPagesParsesAPIResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("action") != "query" {
@@ -17,8 +23,8 @@ func TestListPagesParsesAPIResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewHTTPMediaWikiClient(server.URL, "iris-bot-test")
-	pages, err := client.ListPages(context.Background(), 0, 2)
+	client := newTestClient(server.URL, "iris-bot-test")
+	pages, err := client.ListPages(context.Background(), "", 2)
 	if err != nil {
 		t.Fatalf("ListPages() error = %v", err)
 	}
@@ -33,6 +39,23 @@ func TestListPagesParsesAPIResponse(t *testing.T) {
 	}
 }
 
+func TestListPagesPassesApFromTitle(t *testing.T) {
+	var seen string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen = r.URL.Query().Get("apfrom")
+		_, _ = w.Write([]byte(`{"query":{"allpages":[]}}`))
+	}))
+	defer server.Close()
+
+	client := newTestClient(server.URL, "iris-bot-test")
+	if _, err := client.ListPages(context.Background(), "Rover", 5); err != nil {
+		t.Fatalf("ListPages() error = %v", err)
+	}
+	if seen != "Rover" {
+		t.Fatalf("expected apfrom=Rover, got %q", seen)
+	}
+}
+
 func TestGetPageParsesWikitext(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("action") != "parse" {
@@ -42,7 +65,7 @@ func TestGetPageParsesWikitext(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewHTTPMediaWikiClient(server.URL, "iris-bot-test")
+	client := newTestClient(server.URL, "iris-bot-test")
 	page, err := client.GetPage(context.Background(), 42)
 	if err != nil {
 		t.Fatalf("GetPage() error = %v", err)
@@ -59,8 +82,8 @@ func TestGetPageParsesWikitext(t *testing.T) {
 	if page.Wikitext != "line one\n\nline two" {
 		t.Fatalf("unexpected wikitext: %q", page.Wikitext)
 	}
-	if page.URL == "" {
-		t.Fatalf("expected canonical URL")
+	if page.URL != "https://example.invalid/wiki/Lore_Page" {
+		t.Fatalf("expected canonical wiki URL, got %q", page.URL)
 	}
 }
 
@@ -77,11 +100,11 @@ func TestRetryOn5xx(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewHTTPMediaWikiClient(server.URL, "iris-bot-test")
+	client := newTestClient(server.URL, "iris-bot-test")
 	client.RetryDelay = 5 * time.Millisecond
 	client.MaxRetries = 2
 
-	pages, err := client.ListPages(context.Background(), 0, 1)
+	pages, err := client.ListPages(context.Background(), "", 1)
 	if err != nil {
 		t.Fatalf("ListPages() error = %v", err)
 	}
@@ -102,12 +125,38 @@ func TestUserAgentSent(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewHTTPMediaWikiClient(server.URL, ua)
-	_, err := client.ListPages(context.Background(), 0, 1)
+	client := newTestClient(server.URL, ua)
+	_, err := client.ListPages(context.Background(), "", 1)
 	if err != nil {
 		t.Fatalf("ListPages() error = %v", err)
 	}
 	if seenUA != ua {
 		t.Fatalf("expected user-agent %q, got %q", ua, seenUA)
+	}
+}
+
+func TestMinIntervalEnforced(t *testing.T) {
+	hits := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		_, _ = w.Write([]byte(`{"query":{"allpages":[]}}`))
+	}))
+	defer server.Close()
+
+	client := newTestClient(server.URL, "iris-bot-test")
+	client.MinInterval = 50 * time.Millisecond
+
+	start := time.Now()
+	for i := 0; i < 3; i++ {
+		if _, err := client.ListPages(context.Background(), "", 1); err != nil {
+			t.Fatalf("ListPages() error = %v", err)
+		}
+	}
+	elapsed := time.Since(start)
+	if hits != 3 {
+		t.Fatalf("expected 3 hits, got %d", hits)
+	}
+	if elapsed < 100*time.Millisecond {
+		t.Fatalf("rate limiter did not space requests; elapsed=%v", elapsed)
 	}
 }

@@ -34,6 +34,7 @@ type Config struct {
 	Store     LoreStore
 	SourceID  string
 	BatchSize int
+	OnError   func(stage string, pageID int64, title string, err error)
 }
 
 type Ingester struct {
@@ -69,10 +70,10 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 		return stats, fmt.Errorf("ingester: load cursor: %w", err)
 	}
 
-	fromID := int64(0)
+	fromTitle := ""
 	lastSaved := &Cursor{SourceID: i.cfg.SourceID}
 	if cur != nil {
-		fromID = cur.LastID
+		fromTitle = cur.LastTitle
 		lastSaved = &Cursor{
 			SourceID:  cur.SourceID,
 			LastID:    cur.LastID,
@@ -81,7 +82,7 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 		}
 	}
 
-	summaries, err := i.cfg.Client.ListPages(ctx, fromID, i.cfg.BatchSize)
+	summaries, err := i.cfg.Client.ListPages(ctx, fromTitle, i.cfg.BatchSize)
 	if err != nil {
 		return stats, fmt.Errorf("ingester: list pages: %w", err)
 	}
@@ -92,6 +93,7 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 		page, err := i.cfg.Client.GetPage(ctx, summary.ID)
 		if err != nil {
 			stats.Errors++
+			i.reportError("get_page", summary.ID, summary.Title, err)
 			continue
 		}
 
@@ -102,6 +104,7 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 			if err != nil {
 				stats.Errors++
 				pageFailed = true
+				i.reportError("chunk_exists", page.ID, page.Title, err)
 				break
 			}
 			if exists {
@@ -114,6 +117,7 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 			if err != nil {
 				stats.Errors++
 				pageFailed = true
+				i.reportError("seen_hash", page.ID, page.Title, err)
 				break
 			}
 			if seen {
@@ -125,6 +129,7 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 			if err != nil {
 				stats.Errors++
 				pageFailed = true
+				i.reportError("embed", page.ID, page.Title, err)
 				break
 			}
 
@@ -139,11 +144,13 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 			if err := i.cfg.Store.InsertChunk(ctx, record); err != nil {
 				stats.Errors++
 				pageFailed = true
+				i.reportError("insert_chunk", page.ID, page.Title, err)
 				break
 			}
 			if err := i.cfg.Dedupe.MarkHash(ctx, hash); err != nil {
 				stats.Errors++
 				pageFailed = true
+				i.reportError("mark_hash", page.ID, page.Title, err)
 				break
 			}
 			stats.ChunksInserted++
@@ -168,6 +175,13 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 	}
 
 	return stats, nil
+}
+
+func (i *Ingester) reportError(stage string, pageID int64, title string, err error) {
+	if i.cfg.OnError == nil {
+		return
+	}
+	i.cfg.OnError(stage, pageID, title, err)
 }
 
 func (i *Ingester) validate() error {
