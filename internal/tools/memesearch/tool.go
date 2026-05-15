@@ -28,7 +28,7 @@ func New(idx DiscordMediaIndex, stickers DiscordMediaIndex, social []SocialAdapt
 func (t *Tool) Schema() *tools.Schema {
 	return &tools.Schema{
 		Name:        "meme_search",
-		Description: "Search for a reaction GIF or sticker to attach to your reply. Sources: GIPHY (general reaction GIFs), guild stickers (from this server), Discord history media. Use this tool when a reaction GIF or sticker would amplify the reply tone (excitement, dismissal, agreement, comedic timing). The chat reply must still carry the actual answer; the GIF/sticker is decoration. Pick concise emotional keywords as the query (e.g. 'sad cat', 'mind blown', 'thinking') rather than restating the user's full message.",
+		Description: "Search for a reaction GIF or sticker to attach to your reply. Sources: GIPHY (general reaction GIFs), guild stickers (from this server), Discord history media. Use this tool when a reaction GIF or sticker would amplify the reply tone (excitement, dismissal, agreement, comedic timing). The chat reply must still carry the actual answer; the GIF/sticker is decoration. Pick concise emotional keywords as the query (e.g. 'sad cat', 'mind blown', 'thinking') rather than restating the user's full message. The tool returns several randomized candidates from the top results so successive calls vary - prefer to pick a candidate at random rather than always the first; if the user asks for a different GIF, just call the tool again instead of cycling through the same list.",
 		Fields: []tools.FieldSpec{
 			{
 				Name:        "query",
@@ -46,7 +46,7 @@ func (t *Tool) Schema() *tools.Schema {
 				Name:        "limit",
 				Kind:        tools.KindNumber,
 				Required:    false,
-				Description: "max results, default 3",
+				Description: "max randomized candidates to return; default 5, max 10",
 			},
 		},
 	}
@@ -80,7 +80,7 @@ func (t *Tool) Run(ctx context.Context, args map[string]interface{}) (string, er
 		return "", fmt.Errorf("guild_id must be a number")
 	}
 
-	limit := 3
+	limit := 5
 	if limitVal, ok := args["limit"]; ok {
 		switch v := limitVal.(type) {
 		case float64:
@@ -91,7 +91,10 @@ func (t *Tool) Run(ctx context.Context, args map[string]interface{}) (string, er
 	}
 
 	if limit < 1 {
-		limit = 3
+		limit = 5
+	}
+	if limit > 10 {
+		limit = 10
 	}
 
 	results := make([]MediaItem, 0)
