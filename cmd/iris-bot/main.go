@@ -35,6 +35,7 @@ import (
 	"github.com/eko/iris-bot/internal/tools"
 	"github.com/eko/iris-bot/internal/tools/escalate"
 	lorethread_tool "github.com/eko/iris-bot/internal/tools/lorethread"
+	"github.com/eko/iris-bot/internal/tools/memesearch"
 	"github.com/eko/iris-bot/internal/tools/modelswitch"
 	"github.com/eko/iris-bot/internal/tools/websearch"
 
@@ -391,6 +392,23 @@ func main() {
 			}
 		} else {
 			log.Warn("websearch tool not registered", "reason", "IRIS_SEARXNG_URL, SEARCH_BASE_URL, or SEARCH_API_KEY unset")
+		}
+	}
+
+	{
+		stickerIndex := memesearch.NewGuildStickerIndex(gateway.Session())
+		var social []memesearch.SocialAdapter
+		if giphyKey := os.Getenv("GIPHY_API_KEY"); giphyKey != "" {
+			social = append(social, memesearch.NewGiphyAdapter(giphyKey))
+			log.Info("giphy adapter registered")
+		} else {
+			log.Info("giphy adapter not registered", "reason", "GIPHY_API_KEY unset")
+		}
+		memeSearchTool := memesearch.New(nil, stickerIndex, social, memesearch.NewDefaultSafetyClassifier())
+		if err := registry.Register(&tools.ToolDefinition{Tool: memeSearchTool, Timeout: 10 * time.Second, MaxOutput: 8 * 1024}); err != nil {
+			log.Warn("failed to register meme_search tool", "err", err)
+		} else {
+			log.Info("meme_search tool registered", "stickers", true, "giphy", len(social) > 0)
 		}
 	}
 

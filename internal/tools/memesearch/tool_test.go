@@ -10,7 +10,7 @@ func TestToolRunReturnsDiscordGif(t *testing.T) {
 	idx := NewInMemoryDiscordIndex()
 	idx.AddMessage(12345, "reaksi kaget", "https://media.tenor.com/example.gif", "image/gif")
 
-	tool := New(idx, []SocialAdapter{}, NewDefaultSafetyClassifier())
+	tool := New(idx, nil, []SocialAdapter{}, NewDefaultSafetyClassifier())
 
 	result, err := tool.Run(context.Background(), map[string]interface{}{
 		"query":    "reaksi kaget",
@@ -58,7 +58,7 @@ func TestToolRunBlocksUnsafeMeme(t *testing.T) {
 	}
 
 	adapter := NewFakeSocialAdapter(SourceX, unsafeResults)
-	tool := New(idx, []SocialAdapter{adapter}, NewDefaultSafetyClassifier())
+	tool := New(idx, nil, []SocialAdapter{adapter}, NewDefaultSafetyClassifier())
 
 	result, err := tool.Run(context.Background(), map[string]interface{}{
 		"query":    "meme",
@@ -104,7 +104,7 @@ func TestToolRunDiscordFirstThenSocial(t *testing.T) {
 	}
 
 	adapter := NewFakeSocialAdapter(SourceX, socialResults)
-	tool := New(idx, []SocialAdapter{adapter}, NewDefaultSafetyClassifier())
+	tool := New(idx, nil, []SocialAdapter{adapter}, NewDefaultSafetyClassifier())
 
 	result, err := tool.Run(context.Background(), map[string]interface{}{
 		"query":    "meme",
@@ -149,7 +149,7 @@ func TestToolRunAllBlockedEmptyNote(t *testing.T) {
 	}
 
 	adapter := NewFakeSocialAdapter(SourceX, unsafeResults)
-	tool := New(idx, []SocialAdapter{adapter}, NewDefaultSafetyClassifier())
+	tool := New(idx, nil, []SocialAdapter{adapter}, NewDefaultSafetyClassifier())
 
 	result, err := tool.Run(context.Background(), map[string]interface{}{
 		"query":    "meme",
@@ -182,7 +182,7 @@ func TestToolRunAllBlockedEmptyNote(t *testing.T) {
 
 func TestToolRunMissingQueryError(t *testing.T) {
 	idx := NewInMemoryDiscordIndex()
-	tool := New(idx, []SocialAdapter{}, NewDefaultSafetyClassifier())
+	tool := New(idx, nil, []SocialAdapter{}, NewDefaultSafetyClassifier())
 
 	_, err := tool.Run(context.Background(), map[string]interface{}{
 		"guild_id": 12345,
@@ -195,7 +195,7 @@ func TestToolRunMissingQueryError(t *testing.T) {
 
 func TestToolSchemaContract(t *testing.T) {
 	idx := NewInMemoryDiscordIndex()
-	tool := New(idx, []SocialAdapter{}, NewDefaultSafetyClassifier())
+	tool := New(idx, nil, []SocialAdapter{}, NewDefaultSafetyClassifier())
 
 	schema := tool.Schema()
 
