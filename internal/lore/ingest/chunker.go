@@ -32,7 +32,8 @@ func (c *Chunker) Chunk(page *Page) []Chunk {
 	if page == nil {
 		return nil
 	}
-	text := strings.TrimSpace(page.Wikitext)
+	cleaned := CleanWikitext(page.Wikitext)
+	text := strings.TrimSpace(cleaned)
 	if text == "" {
 		return nil
 	}

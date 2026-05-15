@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -125,7 +126,11 @@ func (i *Ingester) RunOnce(ctx context.Context) (RunStats, error) {
 				continue
 			}
 
-			embedding, err := i.cfg.Embedder.Embed(ctx, chunk.Content)
+			embedInput := chunk.Content
+			if title := strings.TrimSpace(chunk.Title); title != "" {
+				embedInput = title + "\n\n" + chunk.Content
+			}
+			embedding, err := i.cfg.Embedder.Embed(ctx, embedInput)
 			if err != nil {
 				stats.Errors++
 				pageFailed = true
