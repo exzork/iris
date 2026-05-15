@@ -11,6 +11,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/eko/iris-bot/internal/domain"
+	"github.com/eko/iris-bot/internal/lorethread"
 )
 
 type EventCallback func(ctx context.Context, event *domain.DiscordEvent) error
@@ -342,6 +343,13 @@ func (ga *GatewayAdapter) CreateThreadFromMessage(ctx context.Context, guildID, 
 	})
 	if err != nil {
 		var restErr *discordgo.RESTError
+		if errors.As(err, &restErr) && restErr.Message != nil && restErr.Message.Code == discordgo.ErrCodeThreadAlreadyCreatedForThisMessage {
+			ga.logger.Info("thread_already_exists_for_parent",
+				"guild", guildID,
+				"channel", channelID,
+				"parent_message", parentMessageID)
+			return 0, lorethread.ErrThreadAlreadyExists
+		}
 		if errors.As(err, &restErr) && restErr.Response != nil {
 			ga.logger.Warn("create_thread_failed",
 				"guild", guildID,
@@ -353,6 +361,42 @@ func (ga *GatewayAdapter) CreateThreadFromMessage(ctx context.Context, guildID, 
 				"guild", guildID,
 				"channel", channelID,
 				"parent_message", parentMessageID,
+				"err", err)
+		}
+		return 0, err
+	}
+
+	threadID, parseErr := strconv.ParseInt(thread.ID, 10, 64)
+	if parseErr != nil {
+		ga.logger.Error("failed_to_parse_thread_id",
+			"guild", guildID,
+			"channel", channelID,
+			"thread_id_str", thread.ID)
+		return 0, parseErr
+	}
+
+	return threadID, nil
+}
+
+func (ga *GatewayAdapter) CreateThread(ctx context.Context, guildID, channelID int64, name string, archiveAfter time.Duration) (int64, error) {
+	channelIDStr := fmt.Sprintf("%d", channelID)
+
+	thread, err := ga.session.ThreadStartComplex(channelIDStr, &discordgo.ThreadStart{
+		Name:                name,
+		Type:                discordgo.ChannelTypeGuildPublicThread,
+		AutoArchiveDuration: int(archiveAfter.Minutes()),
+	})
+	if err != nil {
+		var restErr *discordgo.RESTError
+		if errors.As(err, &restErr) && restErr.Response != nil {
+			ga.logger.Warn("create_standalone_thread_failed",
+				"guild", guildID,
+				"channel", channelID,
+				"http_status", restErr.Response.StatusCode)
+		} else {
+			ga.logger.Warn("create_standalone_thread_failed",
+				"guild", guildID,
+				"channel", channelID,
 				"err", err)
 		}
 		return 0, err
