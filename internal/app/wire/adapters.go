@@ -323,7 +323,7 @@ func (a *ChannelAllowAdapter) IsAllowed(ctx context.Context, guildID int64, chan
 // MemoryWriterAdapter wraps existing memory service API for async promotion writes.
 type MemoryWriterAdapter struct {
 	Service interface {
-		Consider(ctx context.Context, guildID, userID int64, text string) (bool, error)
+		Store(ctx context.Context, guildID, userID int64, text string) (bool, error)
 	}
 }
 
@@ -331,7 +331,7 @@ func (a *MemoryWriterAdapter) Save(ctx context.Context, guildID int64, userID in
 	if a.Service == nil {
 		return nil
 	}
-	_, err := a.Service.Consider(ctx, guildID, userID, content)
+	_, err := a.Service.Store(ctx, guildID, userID, content)
 	return err
 }
 

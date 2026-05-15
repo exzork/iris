@@ -63,7 +63,18 @@ func (s *MemoryService) Consider(ctx context.Context, guildID, userID int64, tex
 	if !decision.Save {
 		return false, nil
 	}
+	return s.store_(ctx, guildID, userID, text)
+}
 
+// Store saves text without consulting the keyword gate. Intended for callers
+// that have already made an LLM-driven decision (e.g. orchestrator promoter)
+// and just need the redact + embed + persist pipeline. Returns true if a row
+// was written.
+func (s *MemoryService) Store(ctx context.Context, guildID, userID int64, text string) (bool, error) {
+	return s.store_(ctx, guildID, userID, text)
+}
+
+func (s *MemoryService) store_(ctx context.Context, guildID, userID int64, text string) (bool, error) {
 	if s.redactor.IsFullyRedacted(text) {
 		return false, nil
 	}
