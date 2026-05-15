@@ -385,6 +385,19 @@ func (o *Orchestrator) handle(j job) {
 
 	event := j.event
 
+	if event != nil {
+		var msgID int64
+		if event.Message != nil {
+			msgID = event.Message.ID
+		}
+		ctx = llm.WithMeta(ctx, &llm.ContextMeta{
+			GuildID:   event.GuildID,
+			ChannelID: event.ChannelID,
+			MessageID: msgID,
+			UserID:    event.UserID,
+		})
+	}
+
 	if event != nil && event.UserID != 0 {
 		ctx = WithCallerUserID(ctx, event.UserID)
 	}

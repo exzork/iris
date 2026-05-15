@@ -417,11 +417,16 @@ func (e *RegistryExecutor) Execute(ctx context.Context, name string, args map[st
 	argsForLog := summarizeArgs(args)
 	logger.InfoContext(ctx, "tool_call_start", "tool", name, "args", argsForLog)
 	start := time.Now()
+	var guildID, userID int64
+	if meta := llm.MetaFromContext(ctx); meta != nil {
+		guildID = meta.GuildID
+		userID = meta.UserID
+	}
 	res := e.Reg.Execute(ctx, tools.ExecuteRequest{
 		Tool:    name,
 		Args:    args,
-		GuildID: 0,
-		UserID:  0,
+		GuildID: guildID,
+		UserID:  userID,
 		Caller:  tools.CallerContext{IsAdmin: false},
 	})
 	elapsedMS := time.Since(start).Milliseconds()
