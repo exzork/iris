@@ -1,6 +1,9 @@
 package rag
 
-import "context"
+import (
+	"context"
+	"log/slog"
+)
 
 type EmbeddingProvider interface {
 	Embed(ctx context.Context, text string) ([]float32, error)
@@ -10,6 +13,7 @@ type Retriever struct {
 	Embed    EmbeddingProvider
 	Store    ChunkStore
 	MinScore float64
+	Logger   *slog.Logger
 }
 
 func (r *Retriever) Retrieve(ctx context.Context, query string, topK int) ([]ScoredChunk, error) {
@@ -34,5 +38,39 @@ func (r *Retriever) Retrieve(ctx context.Context, query string, topK int) ([]Sco
 		}
 	}
 
+	r.logRetrieval(ctx, query, topK, filtered)
 	return filtered, nil
+}
+
+func (r *Retriever) logRetrieval(ctx context.Context, query string, topK int, hits []ScoredChunk) {
+	logger := r.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	titles := make([]string, len(hits))
+	urls := make([]string, len(hits))
+	scores := make([]float64, len(hits))
+	for i, hit := range hits {
+		titles[i] = hit.Title
+		urls[i] = hit.URL
+		scores[i] = hit.Score
+	}
+
+	logger.InfoContext(ctx, "wiki_retrieval",
+		"query", truncateForLog(query, 200),
+		"top_k", topK,
+		"hits", len(hits),
+		"min_score", r.MinScore,
+		"titles", titles,
+		"urls", urls,
+		"scores", scores,
+	)
+}
+
+func truncateForLog(s string, max int) string {
+	if max <= 0 || len(s) <= max {
+		return s
+	}
+	return s[:max] + "..."
 }
