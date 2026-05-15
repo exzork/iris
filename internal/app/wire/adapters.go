@@ -193,6 +193,10 @@ func (a *DiscordSenderAdapter) SendTyping(ctx context.Context, guildID, channelI
 	return a.Gateway.SendTyping(ctx, guildID, channelID)
 }
 
+func (a *DiscordSenderAdapter) SendImageEmbeds(ctx context.Context, guildID, channelID int64, urls []string) error {
+	return a.Gateway.SendImageEmbeds(ctx, guildID, channelID, urls)
+}
+
 // GuildEnsurer interface for ensuring guild row exists before writes.
 type GuildEnsurer interface {
 	Ensure(ctx context.Context, guildID int64) error

@@ -36,6 +36,10 @@ type ReplyMessageReturningIDSender interface {
 	ReplyMessageReturningID(ctx context.Context, guildID, channelID, replyToMessageID int64, content string, mentionRepliedUser bool) (int64, error)
 }
 
+type ImageEmbedSender interface {
+	SendImageEmbeds(ctx context.Context, guildID, channelID int64, urls []string) error
+}
+
 type TypingSender interface {
 	SendTyping(ctx context.Context, guildID, channelID int64) error
 }
@@ -652,8 +656,12 @@ func (o *Orchestrator) handle(j job) {
 		}
 		knownIDs, usernameToID := collectKnownUserMap(event.UserID, triggerName, messages)
 		safeResp := scrubOutbound(resp, knownIDs, usernameToID)
-		chunks := SplitMessage(safeResp, DiscordMessageLimit)
-		slog.InfoContext(ctx, "response_chunks", "n", len(chunks))
+		textOnly, mediaURLs := extractMediaURLs(safeResp)
+		if textOnly == "" && len(mediaURLs) > 0 {
+			textOnly = " "
+		}
+		chunks := SplitMessage(textOnly, DiscordMessageLimit)
+		slog.InfoContext(ctx, "response_chunks", "n", len(chunks), "media", len(mediaURLs))
 		replied := false
 		canReply := false
 		var replier ReplyMessageSender
@@ -674,6 +682,15 @@ func (o *Orchestrator) handle(j job) {
 				continue
 			}
 			_ = o.cfg.Discord.SendMessage(ctx, event.GuildID, event.ChannelID, chunk)
+		}
+		if len(mediaURLs) > 0 {
+			if embedSender, ok := o.cfg.Discord.(ImageEmbedSender); ok {
+				if err := embedSender.SendImageEmbeds(ctx, event.GuildID, event.ChannelID, mediaURLs); err != nil {
+					slog.WarnContext(ctx, "embed_send_failed", "guild", event.GuildID, "channel", event.ChannelID, "err", err)
+				}
+			} else {
+				slog.DebugContext(ctx, "embed_sender_unavailable")
+			}
 		}
 	}
 

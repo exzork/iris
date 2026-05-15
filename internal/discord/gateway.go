@@ -235,6 +235,23 @@ func (ga *GatewayAdapter) SendTyping(ctx context.Context, guildID, channelID int
 	return nil
 }
 
+func (ga *GatewayAdapter) SendImageEmbeds(ctx context.Context, guildID, channelID int64, urls []string) error {
+	if len(urls) == 0 {
+		return nil
+	}
+	channelIDStr := fmt.Sprintf("%d", channelID)
+	embeds := make([]*discordgo.MessageEmbed, 0, len(urls))
+	for _, u := range urls {
+		embeds = append(embeds, &discordgo.MessageEmbed{
+			Image: &discordgo.MessageEmbedImage{URL: u},
+		})
+	}
+	_, err := ga.session.ChannelMessageSendComplex(channelIDStr, &discordgo.MessageSend{
+		Embeds: embeds,
+	})
+	return err
+}
+
 func (ga *GatewayAdapter) SendMessage(ctx context.Context, guildID, channelID int64, content string) error {
 	channelIDStr := fmt.Sprintf("%d", channelID)
 	_, err := ga.session.ChannelMessageSend(channelIDStr, content)
