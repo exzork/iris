@@ -13,6 +13,13 @@ import (
 // Recognized: giphy.com, media.giphy.com, tenor.com, media.tenor.com,
 // cdn.discordapp.com/stickers/*, and any URL ending in .gif, .png, .jpg, .jpeg, or .webp.
 func extractMediaURLs(content string) (string, []string) {
+	return extractMediaURLsFiltered(content, nil)
+}
+
+// extractMediaURLsFiltered behaves like extractMediaURLs but, when allowlist
+// is non-nil, drops URLs that are not in the allowlist set. Use this to
+// reject media URLs the LLM hallucinated rather than received from a tool.
+func extractMediaURLsFiltered(content string, allowlist map[string]struct{}) (string, []string) {
 	if content == "" {
 		return content, nil
 	}
@@ -33,6 +40,11 @@ func extractMediaURLs(content string) (string, []string) {
 			continue
 		}
 		seen[m] = struct{}{}
+		if allowlist != nil {
+			if _, ok := allowlist[m]; !ok {
+				continue
+			}
+		}
 		urls = append(urls, m)
 	}
 	return cleaned, urls

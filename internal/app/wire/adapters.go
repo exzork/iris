@@ -3,6 +3,7 @@ package wire
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"strings"
@@ -480,9 +481,12 @@ func (a *StreamToolsLLMAdapter) ChatWithToolsStream(ctx context.Context, message
 
 // EscalationAwareExecutor wraps a ToolExecutor and tracks when the escalate_to_strong_model tool fires.
 // It captures the escalation reason for the orchestrator to detect and handle escalation.
+// It also extracts media URLs from meme_search results so the orchestrator can
+// allowlist them and reject any URLs the LLM hallucinates afterward.
 type EscalationAwareExecutor struct {
-	wrapped llm.ToolExecutor
-	reason  string
+	wrapped   llm.ToolExecutor
+	reason    string
+	mediaURLs []string
 }
 
 func NewEscalationAwareExecutor(wrapped llm.ToolExecutor) *EscalationAwareExecutor {
@@ -491,9 +495,11 @@ func NewEscalationAwareExecutor(wrapped llm.ToolExecutor) *EscalationAwareExecut
 
 func (e *EscalationAwareExecutor) Execute(ctx context.Context, name string, args map[string]interface{}) (string, error) {
 	result, err := e.wrapped.Execute(ctx, name, args)
-	// Capture escalation marker if the escalate tool fired
 	if name == "escalate_to_strong_model" && err == nil && strings.HasPrefix(result, "ESCALATED:") {
 		e.reason = strings.TrimPrefix(result, "ESCALATED:")
+	}
+	if name == "meme_search" && err == nil && result != "" {
+		e.collectMediaURLs(result)
 	}
 	return result, err
 }
@@ -502,8 +508,40 @@ func (e *EscalationAwareExecutor) Reason() string {
 	return e.reason
 }
 
+func (e *EscalationAwareExecutor) MediaURLs() []string {
+	out := make([]string, len(e.mediaURLs))
+	copy(out, e.mediaURLs)
+	return out
+}
+
 func (e *EscalationAwareExecutor) Clear() {
 	e.reason = ""
+	e.mediaURLs = nil
+}
+
+func (e *EscalationAwareExecutor) collectMediaURLs(jsonOutput string) {
+	var payload struct {
+		Results []struct {
+			URL string `json:"URL"`
+		} `json:"results"`
+	}
+	if err := json.Unmarshal([]byte(jsonOutput), &payload); err != nil {
+		return
+	}
+	seen := make(map[string]struct{}, len(e.mediaURLs)+len(payload.Results))
+	for _, u := range e.mediaURLs {
+		seen[u] = struct{}{}
+	}
+	for _, r := range payload.Results {
+		if r.URL == "" {
+			continue
+		}
+		if _, ok := seen[r.URL]; ok {
+			continue
+		}
+		seen[r.URL] = struct{}{}
+		e.mediaURLs = append(e.mediaURLs, r.URL)
+	}
 }
 
 // BehaviorProfileUpdater wraps BehaviorProfileService to satisfy orchestrator.BehaviorUpdater interface.

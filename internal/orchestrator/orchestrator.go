@@ -88,6 +88,29 @@ type escalationAware interface {
 	Clear()
 }
 
+type mediaAllowlister interface {
+	MediaURLs() []string
+}
+
+func allowedMediaURLs(exec interface{}) map[string]struct{} {
+	if exec == nil {
+		return nil
+	}
+	a, ok := exec.(mediaAllowlister)
+	if !ok {
+		return nil
+	}
+	urls := a.MediaURLs()
+	if len(urls) == 0 {
+		return map[string]struct{}{}
+	}
+	out := make(map[string]struct{}, len(urls))
+	for _, u := range urls {
+		out[u] = struct{}{}
+	}
+	return out
+}
+
 type Config struct {
 	Router                 Decider
 	LLM                    LLMCaller
@@ -582,7 +605,8 @@ func (o *Orchestrator) handle(j job) {
 		sender := NewStreamingSender(o.cfg.Discord, o.cfg.RateLimiter, event.GuildID, event.ChannelID).
 			WithOutboundTransform(func(s string) string {
 				scrubbed := scrubOutbound(s, knownIDs, usernameToID)
-				cleaned, urls := extractMediaURLs(scrubbed)
+				allowlist := allowedMediaURLs(o.cfg.ToolExecutor)
+				cleaned, urls := extractMediaURLsFiltered(scrubbed, allowlist)
 				mediaCollect(urls)
 				return cleaned
 			})
@@ -695,7 +719,7 @@ func (o *Orchestrator) handle(j job) {
 		}
 		knownIDs, usernameToID := collectKnownUserMap(event.UserID, triggerName, messages)
 		safeResp := scrubOutbound(resp, knownIDs, usernameToID)
-		textOnly, mediaURLs := extractMediaURLs(safeResp)
+		textOnly, mediaURLs := extractMediaURLsFiltered(safeResp, allowedMediaURLs(o.cfg.ToolExecutor))
 		slog.InfoContext(ctx, "media_extract",
 			"raw_response_len", len(safeResp),
 			"text_only_len", len(textOnly),
