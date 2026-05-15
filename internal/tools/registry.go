@@ -108,7 +108,7 @@ func (r *Registry) Execute(ctx context.Context, req ExecuteRequest) ExecuteResul
 
 	def, exists := r.Get(req.Tool)
 	if !exists {
-		r.recordAudit(ctx, req, "unknown_tool", "", time.Since(start))
+		r.recordAudit(ctx, req, "", "unknown_tool", "", time.Since(start))
 		return ExecuteResult{
 			Err:      fmt.Errorf("%w: %q", ErrUnknownTool, req.Tool),
 			Duration: time.Since(start),
@@ -116,63 +116,67 @@ func (r *Registry) Execute(ctx context.Context, req ExecuteRequest) ExecuteResul
 	}
 
 	if def.AdminOnly && !req.Caller.IsAdmin {
-		r.recordAudit(ctx, req, "permission_denied", "", time.Since(start))
+		r.recordAudit(ctx, req, "", "permission_denied", "", time.Since(start))
 		return ExecuteResult{
-			Err:      fmt.Errorf("%w", ErrPermissionDenied),
+			Err:      ErrPermissionDenied,
 			Duration: time.Since(start),
 		}
 	}
 
-	schema := def.Tool.Schema()
-	if err := schema.ValidateArgs(req.Args); err != nil {
-		r.recordAudit(ctx, req, "invalid_args", err.Error(), time.Since(start))
+	if err := def.Tool.Schema().ValidateArgs(req.Args); err != nil {
+		r.recordAudit(ctx, req, "", "invalid_args", err.Error(), time.Since(start))
 		return ExecuteResult{
 			Err:      err,
 			Duration: time.Since(start),
 		}
 	}
 
-	timeout := def.GetTimeout()
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	timeout := def.Timeout
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+	execCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	output, err := def.Tool.Run(ctx, req.Args)
+	output, err := def.Tool.Run(execCtx, req.Args)
 	duration := time.Since(start)
 
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			r.recordAudit(ctx, req, "timeout", "", duration)
+		if execCtx.Err() == context.DeadlineExceeded {
+			r.recordAudit(ctx, req, "", "timeout", "", duration)
 			return ExecuteResult{
-				Err:      fmt.Errorf("%w", ErrTimeout),
+				Err:      ErrTimeout,
 				Duration: duration,
 			}
 		}
-		r.recordAudit(ctx, req, "error", err.Error(), duration)
+		r.recordAudit(ctx, req, "", "error", err.Error(), duration)
 		return ExecuteResult{
 			Err:      err,
 			Duration: duration,
 		}
 	}
 
-	maxOutput := def.GetMaxOutput()
+	maxOutput := def.MaxOutput
+	if maxOutput <= 0 {
+		maxOutput = 16 * 1024
+	}
 	truncated := false
 	if len(output) > maxOutput {
 		output = output[:maxOutput]
 		truncated = true
-		r.recordAudit(ctx, req, "truncated", "", duration)
+		r.recordAudit(ctx, req, output, "truncated", "", duration)
 	} else {
-		r.recordAudit(ctx, req, "ok", "", duration)
+		r.recordAudit(ctx, req, output, "ok", "", duration)
 	}
 
 	return ExecuteResult{
 		Output:    output,
-		Err:       nil,
 		Truncated: truncated,
 		Duration:  duration,
 	}
 }
 
-func (r *Registry) recordAudit(ctx context.Context, req ExecuteRequest, status string, errMsg string, duration time.Duration) {
+func (r *Registry) recordAudit(ctx context.Context, req ExecuteRequest, output string, status string, errMsg string, duration time.Duration) {
 	if r.audit == nil {
 		return
 	}
@@ -180,6 +184,8 @@ func (r *Registry) recordAudit(ctx context.Context, req ExecuteRequest, status s
 		GuildID:  req.GuildID,
 		UserID:   req.UserID,
 		Tool:     req.Tool,
+		Args:     req.Args,
+		Output:   output,
 		Status:   status,
 		Duration: duration,
 		Error:    errMsg,

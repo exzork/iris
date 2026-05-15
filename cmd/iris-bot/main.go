@@ -37,7 +37,9 @@ import (
 	lorethread_tool "github.com/eko/iris-bot/internal/tools/lorethread"
 	"github.com/eko/iris-bot/internal/tools/memesearch"
 	"github.com/eko/iris-bot/internal/tools/modelswitch"
+	reminderTool "github.com/eko/iris-bot/internal/tools/reminder"
 	"github.com/eko/iris-bot/internal/tools/websearch"
+	"github.com/eko/iris-bot/internal/reminder"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -85,6 +87,7 @@ func main() {
 	memoryRepo := repository.NewMemoryRepo(db)
 	wikiRepo := repository.NewWikiRepo(db)
 	auditRepo := repository.NewAuditRepo(db)
+	toolLogRepo := repository.NewToolLogRepo(db)
 	globalSettingsRepo := repository.NewGlobalSettingsRepo(db)
 	loreSessionRepo := repository.NewLoreSessionRepo(db)
 	loreGuildSettingsRepo := repository.NewLoreGuildSettingsRepo(db)
@@ -370,7 +373,7 @@ func main() {
 	}
 	appInstance.TierRouter = tierRouter
 
-	registry := tools.NewRegistry(nil)
+	registry := tools.NewRegistry(&wireadapters.ToolLogAuditAdapter{Repo: toolLogRepo})
 
 	escalateTool := escalate.New()
 	if err := registry.Register(&tools.ToolDefinition{Tool: escalateTool, Timeout: 1 * time.Second, MaxOutput: 1024}); err != nil {
@@ -418,6 +421,19 @@ func main() {
 			log.Warn("failed to register meme_search tool", "err", err)
 		} else {
 			log.Info("meme_search tool registered", "stickers", true, "giphy", len(social) > 0)
+		}
+	}
+
+	{
+		reminderStore := wireadapters.NewPostgresReminderStore(db)
+		reminderSender := &wireadapters.DiscordSenderAdapter{Gateway: gateway}
+		reminderSvc := reminder.NewService(reminderStore, reminder.RealClock{}, reminderSender)
+		reminderSvc.Start(ctx)
+		reminderTool := reminderTool.New(reminderSvc)
+		if err := registry.Register(&tools.ToolDefinition{Tool: reminderTool, Timeout: 5 * time.Second, MaxOutput: 1024}); err != nil {
+			log.Warn("failed to register reminder_create tool", "err", err)
+		} else {
+			log.Info("reminder_create tool registered")
 		}
 	}
 

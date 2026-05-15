@@ -10,6 +10,8 @@ type AuditEvent struct {
 	GuildID  int64
 	UserID   int64
 	Tool     string
+	Args     map[string]interface{}
+	Output   string
 	Status   string
 	Duration time.Duration
 	Error    string
