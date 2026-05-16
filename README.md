@@ -8,7 +8,7 @@ I.R.I.S (Intelligent Retrieval & Indexing System) is a Discord bot built in Go. 
 
 The persona is inspired by the game's archival and retrieval AI concept. Dialogue is grounded in cited wiki content only. The bot does not invent character traits, relationships, or backstory beyond what the wiki supports.
 
-The stack is Go 1.22+, PostgreSQL 16 with pgvector, ONNX-backed local embeddings, SearXNG for web search, and an OpenAI-compatible LLM provider. Docker Compose runs the database, migrations, SearXNG, and bot process for local development or deployment.
+The stack is Go 1.25+, PostgreSQL 16 with pgvector, ONNX-backed local embeddings (384-dim, sentence-transformers/paraphrase-MiniLM-L3-v2), SearXNG for web search, and an OpenAI-compatible LLM provider. Docker Compose runs the database, migrations, SearXNG, and bot process for local development or deployment.
 
 Current bot capabilities:
 
@@ -18,7 +18,7 @@ Current bot capabilities:
 - Stores per-guild message memory in Postgres/pgvector and recalls relevant context through local embeddings.
 - Streams long replies to Discord, applies safety filters, and redacts sensitive output before sending.
 - Registers native Discord slash commands for admin configuration, allowed channels, exceptions, rate limits, and lore-thread settings.
-- Can call built-in tools (`canon_check`, `meme_search`, web search, model switching, lore-thread controls) plus file-configured MCP servers.
+- Can call built-in tools (`canon_check`, `meme_search`, `web_search`, `character_lookup`, `item_lookup`, `patch_summarizer`, `conversation_summarizer`, `reminder_create`, `escalate_to_strong_model`, `lore_finalize_now`, owner-gated `iris_set_model` / `iris_get_models` / `iris_reset_model` / `mcp_add` / `mcp_remove` / `mcp_list`) plus file-configured MCP servers.
 
 ## Quickstart
 
@@ -117,6 +117,14 @@ All variables are loaded from `.env` (or the shell environment).
 | `MCP_CONFIG_PATH` | no | `mcps.json` | Path to MCP server config JSON. In Docker this resolves to `/app/mcps.json`. |
 | `IRIS_CONV_LOCK_TTL` | no | `5m` | How long a conversation remains active after the bot replies. |
 | `IRIS_STREAMING` | no | `true` | Enables streaming Discord responses unless set to `false` or `0`. |
+| `IRIS_EMBED_MODEL_PATH` | no | | Path to ONNX model (paraphrase-MiniLM-L3-v2). Enables embedding-based in-window relevance and cross-channel classification. |
+| `IRIS_EMBED_TOKENIZER_PATH` | no | | Path to the tokenizer.json that pairs with the ONNX model. |
+| `IRIS_EMBED_SIM_THRESHOLD` | no | `0.55` | Cosine similarity threshold for the embedding classifier. |
+| `IRIS_SEARXNG_URL` | no | `http://searxng:8080` | Local SearXNG endpoint used by `web_search`. Leave blank to disable. |
+| `SEARCH_BASE_URL` | no | | Optional external HTTP search provider (e.g. Brave Search). Used as fallback when SearXNG is unset. |
+| `SEARCH_API_KEY` | no | | API key for `SEARCH_BASE_URL`. |
+| `GIPHY_API_KEY` | no | | Enables the Giphy adapter inside `meme_search`. Without it, only the sticker index and Discord-native sources are used. |
+| `ALLOWED_CHANNELS_MIGRATION_FALLBACK` | no | `true` | When no allowed channels are configured, falls back to the exception list (backward-compat shim). |
 | `DEBUG` | no | `false` | Enables debug logging and LLM audit metadata. |
 
 Never commit real values. Keep `.env` out of version control.
@@ -130,7 +138,7 @@ Never commit real values. Keep `.env` out of version control.
 - `searxng`: local SearXNG instance bound to `127.0.0.1:8888`, used by web-search tooling.
 - `bot`: the Go binary built from the repository `Dockerfile`. Depends on `postgres` healthy and `migrate` completed.
 
-Networking is on the private `iris-network` bridge. The bot container has a 1 CPU / 512MB limit by default.
+Networking is on the private `iris-network` bridge. The bot container has a 1 CPU / 1 GB memory limit by default. The host directory `/opt/iris-models` is mounted read-only into the bot container so the ONNX embedding model can load without being baked into the image.
 
 Start everything:
 
@@ -164,27 +172,34 @@ Or from the host against a running Postgres:
 go run ./cmd/migrate up
 ```
 
-The `cmd/migrate` tool accepts `up`, `down`, and `status` subcommands and reads `DATABASE_URL` from the environment.
+The `cmd/migrate` tool accepts `up` and `status` subcommands and reads `DATABASE_URL` from the environment. The current migration set lives in `migrations/001_init.sql` through `migrations/014_memory_embedding_384.sql` and covers guild settings, channel context/conversations, message embeddings (384-dim, IVFFLAT cosine), user behavior profiles, episodic memory, global settings, lore sessions, lore-thread anchors, lore guild settings, and the wiki store (with continuation tokens for ingestion).
 
 ## Slash Commands and Tools
 
-The current command surface is native Discord slash commands registered from `internal/slash/native.go`:
+The current command surface is native Discord slash commands registered from `internal/slash/native.go` and `internal/slash/lore_settings.go`:
 
-- `/iris-exception` manages exception channels.
-- `/iris-allowed` manages the allow-list of channels where the bot may answer.
-- `/iris-config` reads and writes guild settings.
-- `/iris-ratelimit` manages guild/user rate limits.
-- `/iris-lore-settings` controls lore-thread behavior.
-- `/iris-help` summarizes the command surface.
+- `/search query:<text>` - wraps the `web_search` tool for ad-hoc lookups.
+- `/iris-exception add|remove|list` - manages exception channels.
+- `/iris-allowed add|remove|list` - manages the allow-list of channels where the bot may answer.
+- `/iris-config set|get|list` - reads and writes guild settings.
+- `/iris-ratelimit set|get` - manages guild/user rate limits.
+- `/iris-lore enable|disable|status|cap` - controls per-guild lore-thread behavior.
+- `/iris-help` - summarizes the command surface.
 
 Admin-only slash commands require Discord administrator permissions. Older `!iris` command behavior is documented in [docs/admin-commands.md](docs/admin-commands.md) for historical/operator reference, but the active invite URL grants `applications.commands` for slash interactions.
 
-The LLM can also call internal tools through `internal/tools`:
+The LLM can also call internal tools through `internal/tools` and `internal/mcp`:
 
 - `canon_check` verifies lore claims against indexed wiki sources and returns verdicts with citations.
-- `meme_search` searches safe Discord/social media image results.
-- Web search, patch notes, character/item lookup, conversation summary, escalation, model switching, and lore-thread tools are registered at startup when their dependencies are available.
-- MCP tools are loaded from `mcps.json`; when `IRIS_OWNER_ID` is set, the owner can add, remove, and list MCP servers at runtime.
+- `meme_search` searches a curated sticker index plus Giphy (when `GIPHY_API_KEY` is set), filtered through a safety allowlist.
+- `web_search` runs against SearXNG by default, or an external HTTP provider when configured.
+- `character_lookup` / `item_lookup` / `patch_summarizer` answer wiki-grounded structured queries.
+- `conversation_summarizer` produces compact summaries of recent channel context.
+- `reminder_create` schedules in-channel reminders (persisted via `internal/reminder`).
+- `escalate_to_strong_model` lets the default tier hand off to the strong-reasoning model mid-conversation.
+- `lore_finalize_now` lets the lore-thread starter close and summarize an open session on demand.
+- `iris_set_model` / `iris_get_models` / `iris_reset_model` - owner-gated runtime model switching, persisted in `global_settings`.
+- `mcp_add` / `mcp_remove` / `mcp_list` - owner-gated runtime MCP server management. File-configured MCP tools from `mcps.json` are also loaded at startup.
 
 ## Server Memory
 
@@ -207,7 +222,7 @@ Env vars (all optional, safe defaults):
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MEMORY_SERVER_ENABLED` | `true` | Master switch for guild-scoped recall and async capture. |
-| `MEMORY_SERVER_RECALL_THRESHOLD` | `0.72` | Cosine similarity floor for recall hits. Values outside `[0,1]` fall back to the default. |
+| `MEMORY_SERVER_RECALL_THRESHOLD` | `0.55` | Cosine similarity floor for recall hits. Values outside `[0,1]` fall back to the default. |
 | `MEMORY_SERVER_RECALL_TOP_K` | `5` | Max recall rows injected per query. |
 | `MEMORY_SERVER_EMBED_BATCH_SIZE` | `32` | Rows per ONNX embedding batch. |
 | `MEMORY_SERVER_EMBED_WORKERS` | `1` | Parallel embedding workers. |
@@ -235,14 +250,32 @@ Invalid values fall back to defaults rather than failing startup, so a malformed
 Run tests:
 
 ```
-go test ./...
+go test ./... -count=1
 ```
 
-Build the bot binary:
+Vet and build:
+
+```
+go vet ./...
+go build ./...
+```
+
+Build just the bot binary:
 
 ```
 go build ./cmd/iris-bot
 ```
+
+Convenience targets in `Makefile`: `make test`, `make build`, `make vet`, `make regression` (runs `scripts/regression.sh`), `make live-smoke`, `make compose-up`, `make compose-down`, `make migrate-up`.
+
+Additional CLI tools live alongside the bot in `cmd/`:
+
+- `cmd/iris-bot` - main Discord process.
+- `cmd/migrate` - apply SQL migrations against `DATABASE_URL`.
+- `cmd/lore-ingest` - ingests Wuthering Waves wiki pages into `wiki_chunks` (ONNX embeddings, MediaWiki `apcontinue` pagination).
+- `cmd/wikiprobe` - probes the wiki retriever end-to-end (query → chunks → citations).
+- `cmd/memprobe` - probes guild memory recall and embeddings against a live database.
+- `cmd/toolprobe` - dry-runs registered LLM tools for smoke testing.
 
 Architecture overview: [docs/architecture.md](docs/architecture.md). Operator runbook: [docs/runbook.md](docs/runbook.md). Persona and wiki rules: [docs/persona-policy.md](docs/persona-policy.md) and [docs/wiki-compliance.md](docs/wiki-compliance.md).
 
