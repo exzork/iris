@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-var allowedPrefixes = []string{"cx/", "kr/"}
-
 type Config struct {
 	DiscordToken        string
 	OpenAIAPIKey        string
@@ -372,22 +370,16 @@ func loadMemoryServerConfig() MemoryServerConfig {
 	return cfg
 }
 
-// ValidateModelName checks that a model name is allowed (starts with allowed prefix and not eno/*).
+// ValidateModelName checks that a model name is acceptable. The only hard
+// rule is that eno/* models are explicitly disallowed; any other non-empty
+// model name is accepted so operators can point at arbitrary
+// OpenAI-compatible providers without rebuilding the bot.
 func ValidateModelName(model string) error {
+	if strings.TrimSpace(model) == "" {
+		return fmt.Errorf("model name must not be empty")
+	}
 	if strings.HasPrefix(model, "eno/") {
 		return fmt.Errorf("eno/* models are not allowed")
 	}
-
-	allowed := false
-	for _, prefix := range allowedPrefixes {
-		if strings.HasPrefix(model, prefix) {
-			allowed = true
-			break
-		}
-	}
-	if !allowed {
-		return fmt.Errorf("model must start with one of: %v", allowedPrefixes)
-	}
-
 	return nil
 }
