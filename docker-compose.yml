@@ -22,9 +22,11 @@ services:
       - iris-network
 
   migrate:
-    image: pgvector/pgvector:pg16
+    image: iris-bot
     container_name: iris-migrate
     environment:
+      DATABASE_URL: ${DATABASE_URL}
+      MIGRATIONS_DIR: /migrations
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
@@ -34,10 +36,10 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./migrations:/migrations
-    command: >
-      sh -c "until pg_isready -h postgres -U $${POSTGRES_USER} -d $${POSTGRES_DB}; do sleep 1; done &&
-             for f in /migrations/*.sql; do echo \"Applying $$f\"; PGPASSWORD=$${POSTGRES_PASSWORD} psql -h postgres -U $${POSTGRES_USER} -d $${POSTGRES_DB} -v ON_ERROR_STOP=1 -f $$f; done"
+      - ./migrations:/migrations:ro
+    working_dir: /
+    entrypoint: ["/usr/local/bin/migrate"]
+    command: ["up"]
     restart: "no"
     networks:
       - iris-network

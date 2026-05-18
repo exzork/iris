@@ -100,7 +100,10 @@ func migrateUp(ctx context.Context, conn *pgx.Conn) error {
 		return err
 	}
 
-	migrationsDir := "migrations"
+	migrationsDir := os.Getenv("MIGRATIONS_DIR")
+	if migrationsDir == "" {
+		migrationsDir = "migrations"
+	}
 	entries, err := os.ReadDir(migrationsDir)
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %w", err)
