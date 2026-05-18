@@ -482,6 +482,88 @@ func (ga *GatewayAdapter) DeleteThread(ctx context.Context, threadID int64) erro
 	return nil
 }
 
+type ThreadInfo struct {
+	ID       int64
+	OwnerID  int64
+	ParentID int64
+	Name     string
+	Archived bool
+}
+
+func (ga *GatewayAdapter) ListThreadsInChannel(ctx context.Context, parentChannelID int64) ([]ThreadInfo, error) {
+	parentStr := fmt.Sprintf("%d", parentChannelID)
+	seen := make(map[int64]struct{})
+	var out []ThreadInfo
+
+	collect := func(channels []*discordgo.Channel, archivedFallback bool) {
+		for _, c := range channels {
+			if c == nil || c.ParentID != parentStr {
+				continue
+			}
+			id, perr := strconv.ParseInt(c.ID, 10, 64)
+			if perr != nil {
+				continue
+			}
+			if _, dup := seen[id]; dup {
+				continue
+			}
+			seen[id] = struct{}{}
+			ownerID, _ := strconv.ParseInt(c.OwnerID, 10, 64)
+			archived := archivedFallback
+			if c.ThreadMetadata != nil {
+				archived = c.ThreadMetadata.Archived
+			}
+			out = append(out, ThreadInfo{
+				ID:       id,
+				OwnerID:  ownerID,
+				ParentID: parentChannelID,
+				Name:     c.Name,
+				Archived: archived,
+			})
+		}
+	}
+
+	if active, err := ga.session.ThreadsActive(parentStr); err != nil {
+		ga.logger.Warn("list_threads_active_failed", "channel", parentChannelID, "err", err)
+	} else if active != nil {
+		collect(active.Threads, false)
+	}
+
+	for {
+		page, err := ga.session.ThreadsArchived(parentStr, nil, 100)
+		if err != nil {
+			ga.logger.Warn("list_threads_archived_public_failed", "channel", parentChannelID, "err", err)
+			break
+		}
+		if page == nil || len(page.Threads) == 0 {
+			break
+		}
+		before := len(seen)
+		collect(page.Threads, true)
+		if !page.HasMore || len(seen) == before {
+			break
+		}
+	}
+
+	for {
+		page, err := ga.session.ThreadsPrivateArchived(parentStr, nil, 100)
+		if err != nil {
+			ga.logger.Warn("list_threads_archived_private_failed", "channel", parentChannelID, "err", err)
+			break
+		}
+		if page == nil || len(page.Threads) == 0 {
+			break
+		}
+		before := len(seen)
+		collect(page.Threads, true)
+		if !page.HasMore || len(seen) == before {
+			break
+		}
+	}
+
+	return out, nil
+}
+
 func (ga *GatewayAdapter) SendMessageToThread(ctx context.Context, threadID int64, content string) (int64, error) {
 	threadIDStr := fmt.Sprintf("%d", threadID)
 

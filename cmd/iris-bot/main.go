@@ -655,7 +655,7 @@ func main() {
 	var slashRegistrar *slash.Registrar
 	if slashStore != nil {
 		loreSettingsHandler := slash.NewLoreSettingsHandler(loreGuildSettingsRepo)
-		clearThreadsHandler := slash.NewClearThreadsHandler(loreThreadAnchorRepo, loreSessionRepo, gateway)
+		clearThreadsHandler := slash.NewClearThreadsHandler(gateway, gateway, gateway)
 		natives := slash.NewNativeCommands(exceptionHandler, allowedChannelHandler, nil, nil, loreSettingsHandler, clearThreadsHandler)
 		slashRegistrar = slash.NewRegistrar(slashStore, natives)
 		toolExec := registry
