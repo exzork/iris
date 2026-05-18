@@ -655,7 +655,8 @@ func main() {
 	var slashRegistrar *slash.Registrar
 	if slashStore != nil {
 		loreSettingsHandler := slash.NewLoreSettingsHandler(loreGuildSettingsRepo)
-		natives := slash.NewNativeCommands(exceptionHandler, allowedChannelHandler, nil, nil, loreSettingsHandler)
+		clearThreadsHandler := slash.NewClearThreadsHandler(loreThreadAnchorRepo, loreSessionRepo, gateway)
+		natives := slash.NewNativeCommands(exceptionHandler, allowedChannelHandler, nil, nil, loreSettingsHandler, clearThreadsHandler)
 		slashRegistrar = slash.NewRegistrar(slashStore, natives)
 		toolExec := registry
 		router := slash.NewRouter(slashRegistrar, toolExec, mcpOwnerID, mcp.WithCallerUserID)

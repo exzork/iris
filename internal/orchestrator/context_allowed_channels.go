@@ -14,8 +14,8 @@ import (
 
 const (
 	defaultPerChannelLimit      = 30
-	defaultTotalCharBudget      = 40000
-	defaultCompactionKeepRecent = 40
+	defaultTotalCharBudget      = 400000
+	defaultCompactionKeepRecent = 80
 	tagFormatMessage            = "<%s|%s|%s|%d|%s|%s>"
 )
 

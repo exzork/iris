@@ -463,6 +463,25 @@ func (ga *GatewayAdapter) CreateThread(ctx context.Context, guildID, channelID i
 	return threadID, nil
 }
 
+func (ga *GatewayAdapter) DeleteThread(ctx context.Context, threadID int64) error {
+	threadIDStr := fmt.Sprintf("%d", threadID)
+	if _, err := ga.session.ChannelDelete(threadIDStr); err != nil {
+		var restErr *discordgo.RESTError
+		if errors.As(err, &restErr) && restErr.Response != nil {
+			ga.logger.Warn("delete_thread_failed",
+				"thread", threadID,
+				"http_status", restErr.Response.StatusCode,
+				"err", err)
+		} else {
+			ga.logger.Warn("delete_thread_failed",
+				"thread", threadID,
+				"err", err)
+		}
+		return err
+	}
+	return nil
+}
+
 func (ga *GatewayAdapter) SendMessageToThread(ctx context.Context, threadID int64, content string) (int64, error) {
 	threadIDStr := fmt.Sprintf("%d", threadID)
 

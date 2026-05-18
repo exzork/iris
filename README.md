@@ -184,6 +184,7 @@ The current command surface is native Discord slash commands registered from `in
 - `/iris-config set|get|list` - reads and writes guild settings.
 - `/iris-ratelimit set|get` - manages guild/user rate limits.
 - `/iris-lore enable|disable|status|cap` - controls per-guild lore-thread behavior.
+- `/iris-clear-threads` - deletes every Iris-created lore thread in the guild and purges the matching `lore_thread_anchors` / `lore_sessions` rows. Admin only.
 - `/iris-help` - summarizes the command surface.
 
 Admin-only slash commands require Discord administrator permissions. Older `!iris` command behavior is documented in [docs/admin-commands.md](docs/admin-commands.md) for historical/operator reference, but the active invite URL grants `applications.commands` for slash interactions.

@@ -60,6 +60,8 @@ services:
   bot:
     build: .
     container_name: iris-bot
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       OPENAI_API_KEY: ${OPENAI_API_KEY}

@@ -61,6 +61,35 @@ func (r *LoreThreadAnchorRepo) GetBySession(ctx context.Context, sessionID int64
 	return &anchor, nil
 }
 
+// ListThreadIDsByGuild returns every tracked thread_id for the given guild.
+func (r *LoreThreadAnchorRepo) ListThreadIDsByGuild(ctx context.Context, guildID int64) ([]int64, error) {
+	sql := `SELECT thread_id FROM lore_thread_anchors WHERE guild_id = $1`
+	rows, err := r.db.Query(ctx, sql, guildID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list lore thread anchors by guild: %w", err)
+	}
+	defer rows.Close()
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("failed to scan thread id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
+// DeleteAllByGuild removes every anchor row for the given guild; returns rows affected.
+func (r *LoreThreadAnchorRepo) DeleteAllByGuild(ctx context.Context, guildID int64) (int64, error) {
+	sql := `DELETE FROM lore_thread_anchors WHERE guild_id = $1`
+	tag, err := r.db.Exec(ctx, sql, guildID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete lore thread anchors by guild: %w", err)
+	}
+	return tag.RowsAffected(), nil
+}
+
 func (r *LoreThreadAnchorRepo) GetByThreadID(ctx context.Context, threadID int64) (*domain.LoreThreadAnchor, error) {
 	sql := `
 		SELECT id, guild_id, channel_id, thread_id, summary_message_id, summary_text, title, source_session_id, created_at

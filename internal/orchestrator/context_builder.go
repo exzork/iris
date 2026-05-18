@@ -265,23 +265,73 @@ func (cb *ContextBuilder) build(
 			return nil, fmt.Errorf("failed to list recent messages: %w", err)
 		}
 
+		type rendered struct {
+			role    string
+			content string
+		}
+		var pending []rendered
+		var pendingMsgs []*domain.ChannelMessage
 		for _, msg := range priorMessages {
-			if budget <= 0 {
-				break
-			}
 			if msg.MessageID == event.Message.ID {
 				continue
 			}
-			rendered := cb.renderMessage(msg)
 			role := "user"
 			if msg.IsBot {
 				role = "assistant"
 			}
-			messages = append(messages, map[string]string{
-				"role":    role,
-				"content": rendered,
-			})
-			budget--
+			pending = append(pending, rendered{role: role, content: cb.renderMessage(msg)})
+			pendingMsgs = append(pendingMsgs, msg)
+		}
+
+		totalBudget := cb.cfg.TotalCharBudget
+		if totalBudget <= 0 {
+			totalBudget = defaultTotalCharBudget
+		}
+		keepRecent := cb.cfg.CompactionKeepRecent
+		if keepRecent <= 0 {
+			keepRecent = defaultCompactionKeepRecent
+		}
+
+		lines := make([]string, len(pending))
+		for i, p := range pending {
+			lines[i] = p.content
+		}
+		if totalSize(lines) > totalBudget {
+			compacted := cb.compactIfNeeded(ctx, event.GuildID, pendingMsgs, lines, totalBudget, keepRecent)
+			if len(compacted) > 0 {
+				messages = append(messages, map[string]string{
+					"role":    "system",
+					"content": compacted[0],
+				})
+				tail := compacted[1:]
+				offset := len(pending) - len(tail)
+				if offset < 0 {
+					offset = 0
+				}
+				for i, content := range tail {
+					role := "user"
+					idx := offset + i
+					if idx >= 0 && idx < len(pending) {
+						role = pending[idx].role
+						content = pending[idx].content
+					}
+					messages = append(messages, map[string]string{
+						"role":    role,
+						"content": content,
+					})
+				}
+			}
+		} else {
+			for _, p := range pending {
+				if budget <= 0 {
+					break
+				}
+				messages = append(messages, map[string]string{
+					"role":    p.role,
+					"content": p.content,
+				})
+				budget--
+			}
 		}
 	}
 

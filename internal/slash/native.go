@@ -20,6 +20,7 @@ func NewNativeCommands(
 	settings *admin.SettingsHandler,
 	ratelimit *admin.RatelimitHandler,
 	loreSettings *LoreSettingsHandler,
+	clearThreads *ClearThreadsHandler,
 ) []NativeCommand {
 	cmds := []NativeCommand{
 		newExceptionCommand(exception),
@@ -34,6 +35,9 @@ func NewNativeCommands(
 	}
 	if loreSettings != nil {
 		cmds = append(cmds, newLoreSettingsCommand(loreSettings))
+	}
+	if clearThreads != nil {
+		cmds = append(cmds, newClearThreadsCommand(clearThreads))
 	}
 	return cmds
 }
@@ -192,6 +196,7 @@ func newHelpCommand() NativeCommand {
 				"• `/iris-allowed add|remove|list` - kelola channel yang diizinkan (admin)",
 				"• `/iris-config set|get|list` - konfigurasi bot (admin)",
 				"• `/iris-ratelimit set|get` - rate limit channel (admin)",
+				"• `/iris-clear-threads` - hapus semua thread lore yang dibuat iris (admin)",
 				"",
 				"Owner bot juga bisa minta iris `install mcp ...` untuk menambah MCP server baru.",
 			}, "\n"), nil

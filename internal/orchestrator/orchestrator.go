@@ -219,13 +219,13 @@ func New(cfg Config) *Orchestrator {
 
 	contextBuilder := NewContextBuilder(ContextBuilderConfig{
 		MinContext:                10,
-		CurrentChannelMax:         10,
+		CurrentChannelMax:         500,
 		ReplyDepthLimit:           5,
-		PerMessageCharCap:         2000,
+		PerMessageCharCap:         4000,
 		IncludeAllAllowedChannels: cfg.AllowedChannelLister != nil,
-		PerChannelLimit:           30,
-		TotalCharBudget:           40000,
-		CompactionKeepRecent:      40,
+		PerChannelLimit:           200,
+		TotalCharBudget:           400000,
+		CompactionKeepRecent:      80,
 	})
 	if cfg.GuildMemory != nil {
 		contextBuilder.WithGuildMemory(cfg.GuildMemory)

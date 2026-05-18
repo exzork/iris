@@ -129,6 +129,15 @@ func (r *LoreSessionRepo) SetThreadResult(ctx context.Context, id int64, threadI
 	return nil
 }
 
+func (r *LoreSessionRepo) DeleteAllByGuild(ctx context.Context, guildID int64) (int64, error) {
+	sql := `DELETE FROM lore_sessions WHERE guild_id = $1`
+	tag, err := r.db.Exec(ctx, sql, guildID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete lore sessions by guild: %w", err)
+	}
+	return tag.RowsAffected(), nil
+}
+
 func (r *LoreSessionRepo) IncrementRetry(ctx context.Context, id int64, lastErr string) error {
 	sql := `
 		UPDATE lore_sessions
