@@ -66,7 +66,6 @@ func NewGatewayAdapter(token string, botID int64, callback EventCallback) (*Gate
 	}
 
 	session.AddHandler(adapter.onMessageCreate)
-	session.AddHandler(adapter.onMessageUpdate)
 	session.AddHandler(adapter.onInteractionCreate)
 	session.AddHandler(adapter.onReady)
 	session.AddHandler(adapter.onGuildCreate)
@@ -126,10 +125,6 @@ func (ga *GatewayAdapter) SetNormalizerBotID(botID int64) {
 }
 
 func (ga *GatewayAdapter) onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	ga.handleMessage(m.Message)
-}
-
-func (ga *GatewayAdapter) onMessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	ga.handleMessage(m.Message)
 }
 
